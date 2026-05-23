@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIM | High-End Bespoke Terrazzo</title>
+    <meta name="description"
+        content="LIM manufactures bespoke, high-end terrazzo and luxury tiles. Whether you are looking for terrazzo, tezarro, tezzaro, or tezzarro tiles, experience our exclusive collections.">
+    <meta name="keywords" content="terrazzo, tezarro, tezzaro, tezzarro, tezarro tiles, luxury tiles, bespoke terrazzo, London">
+
+    <!-- Google Fonts: Outfit for modern, premium look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+
+    <!-- Theme Notification Toast -->
+    <div id="theme-toast" class="toast">
+        <p>💡 Tip: You can switch between Light and Dark mode using the sun/moon icon at the top right!</p>
+    </div>
+
+    <!-- Navigation -->
+    <header id="navbar">
+        <div class="container nav-container">
+            <a href="#" class="logo">LIM</a>
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="#collections">Collections</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </nav>
+            <div class="nav-actions">
+                <button id="theme-toggle" class="btn btn-outline" style="margin-right: 0.5rem;"
+                    aria-label="Toggle Theme">
+                    <span id="theme-icon">&#9728;</span>
+                </button>
+                <button class="btn btn-outline">Order Samples</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-overlay"></div>
+        <div class="container hero-content">
+            <h1 class="fade-in-up">Bespoke Terrazzo <br> for Modern Spaces</h1>
+            <p class="fade-in-up delay-1">Elegant, high-performance mineral surfaces crafted to perfection. Explore the
+                exclusive LIM collections.</p>
+            <a href="#collections" class="btn btn-primary fade-in-up delay-2">Explore Collections</a>
+        </div>
+    </section>
+
+    <!-- Collections Section -->
+    <section id="collections" class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Our Collections</h2>
+                <p>Discover our range of customizable terrazzo tiles, from geometric patterns to organic textures.</p>
+            </div>
+
+            <div class="grid collections-grid" id="collections-container">
+                <!-- Items will be dynamically populated or added here -->
+
+                <div class="collection-card">
+                    <!-- Placeholder for Firebase Image -->
+                    <div class="img-placeholder">
+                        <span>Image loaded from Firebase</span>
+                    </div>
+                    <div class="card-content">
+                        <h3>Geometric Collection</h3>
+                        <p class="card-desc">Shape your space with custom geometric patterns and colors.</p>
+                        <a href="#" class="link">View Details &rarr;</a>
+                    </div>
+                </div>
+
+                <div class="collection-card">
+                    <div class="img-placeholder">
+                        <span>Image loaded from Firebase</span>
+                    </div>
+                    <div class="card-content">
+                        <h3>Organic Collection</h3>
+                        <p class="card-desc">Traditional aesthetics with irregular fragments of recycled marble.</p>
+                        <a href="#" class="link">View Details &rarr;</a>
+                    </div>
+                </div>
+
+                <div class="collection-card">
+                    <div class="img-placeholder">
+                        <span>Image loaded from Firebase</span>
+                    </div>
+                    <div class="card-content">
+                        <h3>Cristal Collection</h3>
+                        <p class="card-desc">Brilliance from reflective glass depths set in a white binder.</p>
+                        <a href="#" class="link">View Details &rarr;</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Products View (Hidden by default) -->
+    <section id="products-view" class="section" style="display: none;">
+        <div class="container">
+            <div class="section-header">
+                <button id="back-to-collections" class="btn btn-outline"
+                    style="margin-bottom: var(--spacing-md);">&larr; Back to Collections</button>
+                <h2 id="products-view-title">Collection Name</h2>
+                <p>Select a product to view detailed specifications.</p>
+            </div>
+
+            <div class="grid" id="products-container">
+                <!-- Product cards will be dynamically inserted here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="section bg-dark">
+        <div class="container about-container">
+            <div class="about-text">
+                <h2>The Art of Terrazzo</h2>
+                <p>At LIM, we believe in the harmony of natural materials and modern design. Our exclusive
+                    high-performance mineral binder ensures our slabs are exceptionally strong, durable, and uniquely
+                    beautiful.</p>
+                <p>We craft every piece with precision, offering bespoke solutions for floors, walls, and custom
+                    furnishings.</p>
+
+                <div class="social-links" style="margin-top: 1.5rem;">
+                    <a href="https://wa.me/4402035140483" target="_blank" class="social-icon whatsapp"><i
+                            class="fab fa-whatsapp"></i></a>
+                    <a href="https://www.instagram.com/terrazzobylimfactory" target="_blank" class="social-icon instagram"><i
+                            class="fab fa-instagram"></i></a>
+                    <a href="mailto:info@limstore.com" target="_blank" class="social-icon gmail"><i
+                            class="fas fa-envelope"></i></a>
+                </div>
+            </div>
+            <div class="about-stats">
+                <div class="stat">
+                    <h3>20+</h3>
+                    <p>Years of Excellence</p>
+                </div>
+                <div class="stat">
+                    <h3>100%</h3>
+                    <p>Recycled Marble</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="section">
+        <div class="container contact-container">
+            <div class="contact-info">
+                <h2>Visit Our Showroom</h2>
+                <p>Experience the texture and quality of LIM terrazzo in person.</p>
+                <ul class="contact-details">
+                    <li><strong>Email:</strong> info@limstore.com</li>
+                    <li><strong>Phone:</strong> +44 (0) 203 514 0483</li>
+                    <li><strong>Location:</strong> 106 Columbia Road, London E2 7RG</li>
+                </ul>
+            </div>
+            <div class="contact-form">
+                <form id="inquiry-form">
+                    <div class="form-group">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" placeholder="Your Name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" placeholder="Your Email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Message</label>
+                        <textarea id="message" rows="4" placeholder="How can we help you?" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Send Inquiry</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- SEO & Accessibility Text -->
+    <div style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;">
+        <p>LIM specializes in premium terrazzo. Commonly searched as tezarro tiles, tezzaro, or tezzarro, our bespoke surfaces provide unparalleled durability and beauty for modern spaces.</p>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container footer-content">
+            <div class="footer-brand">
+                <h3>LIM</h3>
+                <p>&copy; 2026 LIM Store. All rights reserved.</p>
+            </div>
+            <div class="footer-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+                <a href="https://www.instagram.com/terrazzobylimfactory" target="_blank">Instagram</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Product Details Modal -->
+    <div id="product-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <div class="modal-body">
+                <div class="modal-image" id="modal-image"></div>
+                <div class="modal-info">
+                    <h2 id="modal-title">Product Name</h2>
+                    <p id="modal-desc">Product Description</p>
+                    <img id="modal-sizes-img" src="" alt="Available Sizes"
+                        style="display: none; max-width: 100%; height: auto; margin: 1rem 0; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+
+                    <div class="modal-socials"
+                        style="margin-top: 1.5rem; margin-bottom: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+                        <p style="font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-color);">For order contact
+                            us by clicking on these icons:</p>
+                        <div class="social-links">
+                            <a href="https://wa.me/4402035140483" target="_blank" class="social-icon whatsapp"
+                                title="Order via WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                            <a href="https://ig.me/m/terrazzobylimfactory" target="_blank" class="social-icon instagram"
+                                title="Order via Instagram"><i class="fab fa-instagram"></i></a>
+                            <a href="mailto:info@limstore.com" target="_blank" class="social-icon gmail"
+                                title="Order via Email"><i class="fas fa-envelope"></i></a>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary"
+                        onclick="document.getElementById('contact').scrollIntoView(); document.getElementById('product-modal').classList.remove('show');">Inquire
+                        Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full Image Lightbox -->
+    <div id="lightbox" class="modal" style="z-index: 3000; align-items: center; justify-content: center; padding: 0;">
+        <span class="close-btn" id="close-lightbox" style="position: fixed; top: 20px; right: 30px; font-size: 40px; text-shadow: 0 0 10px rgba(0,0,0,0.5);">&times;</span>
+        <img id="lightbox-img" src="" style="max-width: 95vw; max-height: 95vh; object-fit: contain; cursor: zoom-out;">
+    </div>
+
+
+
+    <!-- Firebase Compat SDK (works without a local server) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="./firebase.js"></script>
+    <script src="./main.js"></script>
+    <script src="./chatbot.js"></script>
+</body>
+
+</html>
