@@ -735,11 +735,13 @@ footer {
 /* Sticky Back Button */
 #back-to-collections {
     position: fixed;
-    bottom: 90px;
-    left: 20px;
-    z-index: 999;
+    top: 75px;
+    left: 15px;
+    z-index: 500;
     box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-    padding: 0.6rem 1.2rem;
-    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
     backdrop-filter: blur(10px);
+    background-color: var(--card-bg);
+    border: 1px solid rgba(255,255,255,0.15);
 }
