@@ -299,9 +299,6 @@ header.scrolled {
     text-transform: uppercase;
     letter-spacing: 0.05em;
     border-bottom: 1px solid rgba(255,255,255,0.05);
-    background-size: contain !important;
-    background-repeat: no-repeat !important;
-    background-position: center !important;
 }
 
 .card-content {
@@ -500,7 +497,7 @@ footer {
 
 .modal-content {
     background-color: var(--card-bg);
-    margin: 2rem auto; /* Push down from the top edge */
+    margin: 60px auto 2rem auto;
     padding: 0;
     border: 1px solid rgba(255,255,255,0.1);
     width: 90%;
@@ -517,19 +514,27 @@ footer {
 }
 
 .close-btn {
-    color: var(--text-color);
+    color: #fff;
     position: absolute;
-    top: 15px;
-    right: 25px;
+    top: -44px;
+    right: 0;
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
     z-index: 10;
-    transition: color 0.3s;
+    transition: color 0.3s, background 0.3s;
+    background: rgba(0,0,0,0.6);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
 }
 
 .close-btn:hover {
     color: var(--accent-color);
+    background: rgba(0,0,0,0.9);
 }
 
 .modal-body {
