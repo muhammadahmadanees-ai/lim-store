@@ -497,7 +497,7 @@ footer {
 
 .modal-content {
     background-color: var(--card-bg);
-    margin: 60px auto 2rem auto;
+    margin: 2rem auto; /* Push down from the top edge */
     padding: 0;
     border: 1px solid rgba(255,255,255,0.1);
     width: 90%;
@@ -514,27 +514,19 @@ footer {
 }
 
 .close-btn {
-    color: #fff;
+    color: var(--text-color);
     position: absolute;
-    top: -44px;
-    right: 0;
+    top: 15px;
+    right: 25px;
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
     z-index: 10;
-    transition: color 0.3s, background 0.3s;
-    background: rgba(0,0,0,0.6);
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
+    transition: color 0.3s;
 }
 
 .close-btn:hover {
     color: var(--accent-color);
-    background: rgba(0,0,0,0.9);
 }
 
 .modal-body {
@@ -738,4 +730,16 @@ footer {
     font-size: 1.2rem;
     cursor: pointer;
     margin-left: 10px;
+}
+
+/* Sticky Back Button */
+#back-to-collections {
+    position: fixed;
+    top: 80px;
+    left: 20px;
+    z-index: 999;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    backdrop-filter: blur(10px);
 }
