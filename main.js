@@ -263,10 +263,20 @@ document.addEventListener('DOMContentLoaded', () => {
     loadCollections();
 
     // Handle Back Button
-    const backBtn = document.getElementById('back-to-collections');
+    const backBtn = document.getElementById("back-to-collections");
     if (backBtn) {
-        backBtn.addEventListener('click', showCollectionsView);
+        backBtn.addEventListener("click", showCollectionsView);
     }
+
+    // Dynamically position back button just below navbar
+    function updateBackBtnPosition() {
+        if (backBtn) {
+            backBtn.style.top = (navbar.offsetHeight + 8) + "px";
+        }
+    }
+    updateBackBtnPosition();
+    window.addEventListener("resize", updateBackBtnPosition);
+    window.addEventListener("scroll", updateBackBtnPosition);
 
     // 6. Modal Logic
     const modal = document.getElementById('product-modal');
