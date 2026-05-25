@@ -61,23 +61,28 @@ document.addEventListener('DOMContentLoaded', () => {
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             const btn = form.querySelector('button[type="submit"]');
-            const originalText = btn.textContent;
+            const name    = document.getElementById('name').value;
+            const email   = document.getElementById('email').value;
+            const message = document.getElementById('message').value;
 
-            btn.textContent = 'Sending...';
+            const subject  = encodeURIComponent(`Inquiry from ${name}`);
+            const body     = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`);
+            const gmailUrl = `https://mail.google.com/mail/?view=cm&to=limfactoryy%40gmail.com&su=${subject}&body=${body}`;
+
+            btn.textContent  = 'Opening Gmail...';
             btn.style.opacity = '0.8';
+            window.open(gmailUrl, '_blank');
 
-            // Simulate network request
             setTimeout(() => {
-                btn.textContent = 'Message Sent!';
-                btn.style.backgroundColor = '#4caf50'; // Green success
+                btn.textContent = '\u2705 Gmail Opened!';
+                btn.style.backgroundColor = '#4caf50';
                 form.reset();
-
                 setTimeout(() => {
-                    btn.textContent = originalText;
+                    btn.textContent = 'Send Inquiry';
                     btn.style.backgroundColor = '';
                     btn.style.opacity = '1';
                 }, 3000);
-            }, 1500);
+            }, 800);
         });
     }
 
@@ -270,7 +275,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 6. Modal Logic
     const modal = document.getElementById('product-modal');
-    const closeBtn = document.querySelector('.close-btn');
+    // Use the close-btn INSIDE product-modal specifically, not the first one on the page
+    const closeBtn = modal ? modal.querySelector('.close-btn') : null;
 
     // Make openModal available globally or within the closure
     window.openModal = function (title, desc, img, sizesImg) {
@@ -302,11 +308,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    window.onclick = function (event) {
-        if (event.target == modal) {
-            modal.classList.remove('show');
-        }
-    }
+    // Close any modal when clicking the backdrop
+    window.addEventListener('click', function (event) {
+        // product modal backdrop
+        if (event.target === modal) modal.classList.remove('show');
+        // order modal backdrop
+        const orderModal = document.getElementById('order-modal');
+        if (event.target === orderModal) orderModal.classList.remove('show');
+        // sample form modal backdrop
+        const sampleModal = document.getElementById('sample-form-modal');
+        if (event.target === sampleModal) sampleModal.classList.remove('show');
+    });
 
     // 8. Lightbox Logic
     const lightbox = document.getElementById('lightbox');
@@ -382,8 +394,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const copyBtn = document.getElementById('copy-ig-msg');
         const openSampleFormBtn = document.getElementById('open-sample-form-btn');
 
-        if (waLink) waLink.href = `https://wa.me/4402035140483?text=${encodeURIComponent(prewrittenMsg)}`;
-        if (emailLink) emailLink.href = `mailto:info@limstore.com?subject=Sample%20Order%20Inquiry&body=${encodeURIComponent(prewrittenMsg)}`;
+        if (waLink) waLink.href = "https://wa.me/4402035140483?text=Hello%20LIM%20Factory%21%20%F0%9F%91%8B%20I%20visited%20your%20website%20and%20I%27m%20interested%20in%20placing%20an%20order.%20Could%20you%20please%20help%20me%20with%20your%20terrazzo%20tile%20collections%2C%20pricing%2C%20and%20availability%3F%20Thank%20you%21";
+        if (emailLink) emailLink.href = "https://mail.google.com/mail/?view=cm&to=limfactoryy%40gmail.com&su=Order%20Inquiry%20%E2%80%93%20LIM%20Factory&body=Hello%20LIM%20Factory%20Team%2C%0A%0AI%20visited%20your%20website%20and%20I%20am%20interested%20in%20placing%20an%20order%20for%20your%20terrazzo%20tiles.%0A%0ACould%20you%20please%20provide%20me%20with%20more%20information%20about%3A%0A-%20Available%20collections%20and%20products%0A-%20Pricing%20and%20minimum%20order%20quantities%0A-%20Delivery%20times%20and%20shipping%20costs%0A%0ALooking%20forward%20to%20hearing%20from%20you.%0A%0AKind%20regards";
 
         function resetOrderModal() {
             if (igMsgBox) igMsgBox.style.display = 'none';
@@ -434,7 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.style.opacity = '0.8';
 
             // Send via mailto
-            window.location.href = `mailto:info@limstore.com?subject=Sample%20Request%20from%20${encodeURIComponent(data.name)}&body=${msg}`;
+            window.location.href = `https://mail.google.com/mail/?view=cm&to=limfactoryy%40gmail.com&su=Sample%20Request%20from%20${encodeURIComponent(data.name)}&body=${msg}`;
 
             setTimeout(() => {
                 submitBtn.textContent = '✅ Request Sent!';
@@ -866,3 +878,19 @@ window.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('resize', () => { setupCanvas(); resetPts(); buildOffscreen(); render(); });
     });
 })();
+
+// =====================
+// STAT COUNTER ANIMATION
+// =====================
+window.addEventListener('DOMContentLoaded', () => {
+    const statObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                statObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.4 });
+
+    document.querySelectorAll('.stat').forEach(el => statObserver.observe(el));
+});
