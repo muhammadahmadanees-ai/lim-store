@@ -36,6 +36,8 @@
                 <ul class="nav-links">
                     <li><a href="#collections">Collections</a></li>
                     <li><a href="#about">About</a></li>
+                    <li><a href="#visualizer">Visualizer</a></li>
+                    <li><a href="#faq">FAQ</a></li>
                     <li><a href="#contact">Contact</a></li>
                 </ul>
             </nav>
@@ -194,6 +196,83 @@
         <p>LIM specializes in premium terrazzo. Commonly searched as tezarro tiles, tezzaro, or tezzarro, our bespoke surfaces provide unparalleled durability and beauty for modern spaces.</p>
     </div>
 
+
+    <!-- Room Visualizer Section -->
+    <section id="visualizer" class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Room Visualizer</h2>
+                <p>Upload a photo of your room and see how our terrazzo tiles look in your space.</p>
+            </div>
+            <div class="visualizer-container">
+                <div class="visualizer-upload" id="visualizer-upload">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Click or drag to upload your room photo</p>
+                    <input type="file" id="room-photo-input" accept="image/*" style="display:none;">
+                </div>
+                <div class="visualizer-workspace" id="visualizer-workspace" style="display:none;">
+                    <div class="visualizer-canvas-wrap">
+                        <canvas id="viz-canvas"></canvas>
+                        <div class="viz-hint">Drag yellow corners + blue side handles to fit your floor</div>
+                    </div>
+                    <div class="visualizer-controls">
+                        <h3>Choose a Tile</h3>
+                        <div id="visualizer-tiles" class="visualizer-tiles-grid"></div>
+                        <div class="visualizer-sliders">
+                            <label>Tile Opacity <span id="opacity-val">90%</span></label>
+                            <input type="range" id="opacity-slider" min="10" max="100" value="90">
+                            <label>Tile Scale <span id="scale-val">1.0x</span></label>
+                            <input type="range" id="scale-slider" min="3" max="40" value="15">
+                        </div>
+                        <button class="btn btn-outline" id="reset-visualizer" style="margin-top:1rem; width:100%;">
+                            <i class="fas fa-redo"></i> Upload New Photo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="section bg-dark">
+        <div class="container">
+            <div class="section-header">
+                <h2>Frequently Asked Questions</h2>
+                <p>Everything you need to know. Still have questions? Ask our chatbot below.</p>
+            </div>
+            <div class="faq-list">
+                <div class="faq-item">
+                    <button class="faq-question">How long does delivery take? <span class="faq-icon">+</span></button>
+                    <div class="faq-answer"><p>Standard orders are delivered within <strong>2–4 weeks</strong>. Custom and bespoke orders typically take <strong>4–6 weeks</strong> depending on complexity and size. We confirm the exact lead time when you place your order.</p></div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">Can I get samples before ordering? <span class="faq-icon">+</span></button>
+                    <div class="faq-answer"><p>Yes! We strongly recommend ordering samples first. Click the <strong>"Order Samples"</strong> button at the top of the page to request physical samples delivered to your address so you can feel the texture and see the true colour in your own space.</p></div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">What sizes are available? <span class="faq-icon">+</span></button>
+                    <div class="faq-answer"><p>Our standard tile sizes are <strong>30×30 cm</strong>, <strong>60×60 cm</strong>, and <strong>60×120 cm</strong>. We also offer fully custom sizes for bespoke projects — contact us to discuss your requirements.</p></div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">How do I install terrazzo tiles? <span class="faq-icon">+</span></button>
+                    <div class="faq-answer"><p>Terrazzo tiles should be installed by a professional using a suitable adhesive for stone tiles. Ensure the subfloor is clean, flat, and dry. Grout joints of <strong>1.5–2 mm</strong> are recommended. After installation, seal the surface with a penetrating stone sealer.</p></div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">How do I clean and maintain terrazzo? <span class="faq-icon">+</span></button>
+                    <div class="faq-answer"><p>Use a <strong>pH-neutral cleaner</strong> and a damp mop for daily cleaning — avoid acidic cleaners like vinegar as they can etch the surface. Re-seal every <strong>1–2 years</strong> depending on traffic. For deep cleaning, use a specialist stone cleaner.</p></div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">Do you ship internationally? <span class="faq-icon">+</span></button>
+                    <div class="faq-answer"><p>Yes, we ship worldwide. Shipping costs and times vary by destination. Please contact us at <a href="mailto:info@limstore.com" style="color: var(--accent-color);">info@limstore.com</a> or via WhatsApp for an international shipping quote.</p></div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">What is the minimum order quantity? <span class="faq-icon">+</span></button>
+                    <div class="faq-answer"><p>For standard collections, the minimum order is <strong>5 sqm</strong>. For custom and bespoke orders, minimums may vary — get in touch to discuss your project size and we will find the best solution for you.</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Footer -->
     <footer>
         <div class="container footer-content">
@@ -208,6 +287,92 @@
             </div>
         </div>
     </footer>
+
+
+    <!-- Order Samples Modal -->
+    <div id="order-modal" class="modal">
+        <div class="modal-content order-modal-content">
+            <span class="close-btn" id="close-order-modal">&times;</span>
+            <div style="text-align:center; padding: 2.5rem 2rem 1rem;">
+                <h2 style="margin-bottom:0.5rem;">Order Samples</h2>
+                <div id="order-buttons" style="display:flex; flex-direction:column; gap:1rem;">
+                    <button id="open-sample-form-btn" class="order-option-btn" style="background:var(--accent-color); color:#000; font-size:1.1rem; padding: 1.2rem;"><i class="fas fa-file-alt"></i> Fill Sample Request Form</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sample Request Form Modal -->
+    <div id="sample-form-modal" class="modal">
+        <div class="modal-content sample-form-content">
+            <span class="close-btn" id="close-sample-form">&times;</span>
+            <div style="padding: 2.5rem 2rem;">
+                <h2 style="margin-bottom:0.25rem; text-align:center;">Sample Request Form</h2>
+                <p style="text-align:center; margin-bottom:2rem; font-size:0.95rem;">Fill in the details below and we will send your samples directly to you.</p>
+                <form id="sample-request-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Full Name *</label>
+                            <input type="text" name="name" placeholder="Your full name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email *</label>
+                            <input type="email" name="email" placeholder="your@email.com" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Phone / WhatsApp</label>
+                            <input type="tel" name="phone" placeholder="+44 ...">
+                        </div>
+                        <div class="form-group">
+                            <label>Collection *</label>
+                            <select name="collection" required>
+                                <option value="">Select a collection</option>
+                                <option>Terrazzo Tiles</option>
+                                <option>Terrazzo Slabs</option>
+                                <option>Geometric Collection</option>
+                                <option>Organic Collection</option>
+                                <option>Cristal Collection</option>
+                                <option>Not sure — please advise</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tile / Product Name</label>
+                            <input type="text" name="tile" placeholder="e.g. Ash Matrix, or leave blank">
+                        </div>
+                        <div class="form-group">
+                            <label>Number of Samples *</label>
+                            <select name="quantity" required>
+                                <option value="">Select</option>
+                                <option>1</option>
+                                <option>2</option>
+                                <option>3</option>
+                                <option>4</option>
+                                <option>5+</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Shipping Address *</label>
+                        <input type="text" name="address" placeholder="Street address" required style="margin-bottom:0.5rem;">
+                        <div class="form-row">
+                            <input type="text" name="city" placeholder="City" style="width:100%; padding:1rem; background:var(--card-bg); border:1px solid rgba(255,255,255,0.1); color:var(--text-color); font-family:var(--font-primary); border-radius:4px;">
+                            <input type="text" name="postcode" placeholder="Postcode / ZIP" style="width:100%; padding:1rem; background:var(--card-bg); border:1px solid rgba(255,255,255,0.1); color:var(--text-color); font-family:var(--font-primary); border-radius:4px;">
+                            <input type="text" name="country" placeholder="Country" style="width:100%; padding:1rem; background:var(--card-bg); border:1px solid rgba(255,255,255,0.1); color:var(--text-color); font-family:var(--font-primary); border-radius:4px;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Additional Notes</label>
+                        <textarea name="notes" rows="3" placeholder="Any specific requirements, preferred colours, project details..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block" id="sample-submit-btn">Send Sample Request</button>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <!-- Product Details Modal -->
     <div id="product-modal" class="modal">
@@ -251,25 +416,6 @@
 
 
 
-    <!-- Order Samples Modal -->
-    <div id="order-modal" class="modal">
-        <div class="modal-content" style="max-width: 440px; padding: 2.5rem; text-align: center; margin: auto;">
-            <span class="close-btn" id="close-order-modal">&times;</span>
-            <h2 style="margin-bottom: 0.5rem; font-size: 1.8rem;">Order Samples</h2>
-            <p style="margin-bottom: 1.5rem; font-size: 1rem; color: #a0a0a0;">Choose how you'd like to reach us.</p>
-            <div id="order-buttons" style="display: flex; flex-direction: column; gap: 1rem;">
-                <a id="order-whatsapp" href="#" target="_blank" class="order-option-btn whatsapp-btn"><i class="fab fa-whatsapp"></i> Order via WhatsApp</a>
-                <button id="order-instagram-btn" class="order-option-btn instagram-btn"><i class="fab fa-instagram"></i> Order via Instagram</button>
-                <a id="order-email" href="#" class="order-option-btn gmail-btn"><i class="fas fa-envelope"></i> Order via Email</a>
-            </div>
-            <div id="instagram-msg-box" style="display:none; margin-top: 1.5rem; text-align: left;">
-                <p style="font-size: 0.85rem; color: #a0a0a0; margin-bottom: 0.5rem;">Copy this message and paste it in Instagram DM:</p>
-                <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 1rem; font-size: 0.9rem; color: var(--text-color); margin-bottom: 1rem;" id="ig-msg-text">Hello! I visited the LIM Terrazzo website and I'm interested in ordering samples. Could you please provide more information about available collections and pricing? Thank you!</div>
-                <button id="copy-ig-msg" class="btn btn-primary" style="width: 100%; margin-bottom: 0.75rem;">&#128203; Copy Message</button>
-                <a href="https://ig.me/m/terrazzobylimfactory" target="_blank" class="order-option-btn instagram-btn" style="display:flex;"><i class="fab fa-instagram"></i> Open Instagram DM</a>
-            </div>
-        </div>
-    </div>
     <!-- Firebase Compat SDK (works without a local server) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics-compat.js"></script>
