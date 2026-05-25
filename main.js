@@ -379,30 +379,43 @@ document.addEventListener('DOMContentLoaded', () => {
         const igMsgBox = document.getElementById('instagram-msg-box');
         const copyBtn = document.getElementById('copy-ig-msg');
 
-        // Set pre-filled links
         if (waLink) waLink.href = `https://wa.me/4402035140483?text=${encodeURIComponent(prewrittenMsg)}`;
         if (emailLink) emailLink.href = `mailto:info@limstore.com?subject=Sample%20Order%20Inquiry&body=${encodeURIComponent(prewrittenMsg)}`;
 
-        // Open modal
+        function resetModal() {
+            if (igMsgBox) igMsgBox.style.display = 'none';
+            if (igBtn) igBtn.style.display = 'flex';
+            if (copyBtn) {
+                copyBtn.innerHTML = '&#128203; Copy Message';
+                copyBtn.classList.remove('copied');
+            }
+        }
+
         if (orderBtn) orderBtn.addEventListener('click', () => {
-            igMsgBox.style.display = 'none'; // reset instagram box
+            resetModal();
             orderModal.classList.add('show');
         });
 
-        // Close modal
-        if (closeOrderModal) closeOrderModal.addEventListener('click', () => orderModal.classList.remove('show'));
-        if (orderModal) orderModal.addEventListener('click', (e) => { if (e.target === orderModal) orderModal.classList.remove('show'); });
+        if (closeOrderModal) closeOrderModal.addEventListener('click', () => {
+            orderModal.classList.remove('show');
+            resetModal();
+        });
 
-        // Instagram — show copy box
+        if (orderModal) orderModal.addEventListener('click', (e) => {
+            if (e.target === orderModal) {
+                orderModal.classList.remove('show');
+                resetModal();
+            }
+        });
+
         if (igBtn) igBtn.addEventListener('click', () => {
             igMsgBox.style.display = 'block';
             igBtn.style.display = 'none';
         });
 
-        // Copy message to clipboard
         if (copyBtn) copyBtn.addEventListener('click', () => {
             navigator.clipboard.writeText(prewrittenMsg).then(() => {
-                copyBtn.textContent = '✅ Copied!';
+                copyBtn.innerHTML = '✅ Copied!';
                 copyBtn.classList.add('copied');
                 setTimeout(() => {
                     copyBtn.innerHTML = '&#128203; Copy Message';
