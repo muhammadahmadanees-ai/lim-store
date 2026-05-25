@@ -209,20 +209,6 @@
         </div>
     </footer>
 
-
-    <!-- Order Samples Modal -->
-    <div id="order-modal" class="modal">
-        <div class="modal-content" style="max-width: 420px; padding: 2.5rem; text-align: center;">
-            <span class="close-btn" id="close-order-modal">&times;</span>
-            <h2 style="margin-bottom: 0.5rem; font-size: 1.8rem;">Order Samples</h2>
-            <p style="margin-bottom: 1.5rem; font-size: 1rem; color: #a0a0a0;">Choose how you'd like to reach us. A pre-written message will be sent on your behalf.</p>
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                <a id="order-whatsapp" href="#" target="_blank" class="order-option-btn whatsapp-btn"><i class="fab fa-whatsapp"></i> Order via WhatsApp</a>
-                <a id="order-instagram" href="https://ig.me/m/terrazzobylimfactory" target="_blank" class="order-option-btn instagram-btn"><i class="fab fa-instagram"></i> Order via Instagram</a>
-                <a id="order-email" href="#" class="order-option-btn gmail-btn"><i class="fas fa-envelope"></i> Order via Email</a>
-            </div>
-        </div>
-    </div>
     <!-- Product Details Modal -->
     <div id="product-modal" class="modal">
         <div class="modal-content">
@@ -265,6 +251,25 @@
 
 
 
+    <!-- Order Samples Modal -->
+    <div id="order-modal" class="modal">
+        <div class="modal-content" style="max-width: 440px; padding: 2.5rem; text-align: center; margin: auto;">
+            <span class="close-btn" id="close-order-modal">&times;</span>
+            <h2 style="margin-bottom: 0.5rem; font-size: 1.8rem;">Order Samples</h2>
+            <p style="margin-bottom: 1.5rem; font-size: 1rem; color: #a0a0a0;">Choose how you'd like to reach us.</p>
+            <div id="order-buttons" style="display: flex; flex-direction: column; gap: 1rem;">
+                <a id="order-whatsapp" href="#" target="_blank" class="order-option-btn whatsapp-btn"><i class="fab fa-whatsapp"></i> Order via WhatsApp</a>
+                <button id="order-instagram-btn" class="order-option-btn instagram-btn"><i class="fab fa-instagram"></i> Order via Instagram</button>
+                <a id="order-email" href="#" class="order-option-btn gmail-btn"><i class="fas fa-envelope"></i> Order via Email</a>
+            </div>
+            <div id="instagram-msg-box" style="display:none; margin-top: 1.5rem; text-align: left;">
+                <p style="font-size: 0.85rem; color: #a0a0a0; margin-bottom: 0.5rem;">Copy this message and paste it in Instagram DM:</p>
+                <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 1rem; font-size: 0.9rem; color: var(--text-color); margin-bottom: 1rem;" id="ig-msg-text">Hello! I visited the LIM Terrazzo website and I'm interested in ordering samples. Could you please provide more information about available collections and pricing? Thank you!</div>
+                <button id="copy-ig-msg" class="btn btn-primary" style="width: 100%; margin-bottom: 0.75rem;">&#128203; Copy Message</button>
+                <a href="https://ig.me/m/terrazzobylimfactory" target="_blank" class="order-option-btn instagram-btn" style="display:flex;"><i class="fab fa-instagram"></i> Open Instagram DM</a>
+            </div>
+        </div>
+    </div>
     <!-- Firebase Compat SDK (works without a local server) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics-compat.js"></script>
