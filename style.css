@@ -199,9 +199,35 @@ header.scrolled {
 }
 
 .logo {
-    font-size: 2rem;
+    font-size: 1.6rem;
     font-weight: 700;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+}
+
+.logo:hover {
+    transform: scale(1.05);
+}
+
+.logo-img {
+    height: 42px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 6px rgba(200,169,110,0.35));
+    animation: logoFloat 4s ease-in-out infinite;
+    transition: filter 0.3s ease;
+}
+
+.logo:hover .logo-img {
+    filter: drop-shadow(0 0 14px rgba(200,169,110,0.75));
+}
+
+@keyframes logoFloat {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-3px); }
 }
 
 .nav-links {
@@ -1100,4 +1126,153 @@ footer {
     pointer-events: none;
     white-space: nowrap;
     letter-spacing: 0.03em;
+}
+
+/* =====================
+   EXTRA ANIMATIONS
+   ===================== */
+
+/* ── Navbar slide-in on load ── */
+#navbar {
+    animation: navSlideDown 0.6s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes navSlideDown {
+    from { transform: translateY(-100%); opacity: 0; }
+    to   { transform: translateY(0);     opacity: 1; }
+}
+
+/* ── Hero text shimmer on the h1 ── */
+.hero h1 {
+    background: linear-gradient(90deg,
+        var(--text-color) 0%,
+        var(--accent-color) 40%,
+        var(--text-color) 60%,
+        var(--text-color) 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 4s linear infinite;
+}
+@keyframes shimmer {
+    0%   { background-position: 200% center; }
+    100% { background-position: -200% center; }
+}
+
+/* ── Collection cards — lift & glow on hover ── */
+.collection-card {
+    transition: transform 0.35s cubic-bezier(.34,1.56,.64,1),
+                box-shadow 0.35s ease !important;
+}
+.collection-card:hover {
+    transform: translateY(-10px) scale(1.02) !important;
+    box-shadow: 0 20px 48px rgba(0,0,0,0.45),
+                0 0 0 1px rgba(200,169,110,0.25);
+}
+
+/* ── Stat counters pulse ── */
+.stat h3 {
+    animation: statPop 0.7s cubic-bezier(.34,1.56,.64,1) both;
+    animation-play-state: paused;
+}
+.stat.visible h3 {
+    animation-play-state: running;
+}
+@keyframes statPop {
+    0%   { transform: scale(0.5); opacity: 0; }
+    70%  { transform: scale(1.15); }
+    100% { transform: scale(1);   opacity: 1; }
+}
+
+/* ── Section headers slide up ── */
+.section-header h2 {
+    animation: slideUpFade 0.7s ease both;
+}
+.section-header p {
+    animation: slideUpFade 0.7s 0.15s ease both;
+}
+@keyframes slideUpFade {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Buttons: ripple & glow pulse ── */
+.btn-primary {
+    position: relative;
+    overflow: hidden;
+}
+.btn-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.18);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+    border-radius: inherit;
+}
+.btn-primary:hover::after {
+    transform: scaleX(1);
+}
+
+/* ── Social icons spin on hover ── */
+.social-icon {
+    transition: transform 0.35s cubic-bezier(.34,1.56,.64,1),
+                box-shadow 0.3s ease !important;
+}
+.social-icon:hover {
+    transform: rotate(10deg) scale(1.2) !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4) !important;
+}
+
+/* ── FAQ item open animation ── */
+.faq-answer {
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1),
+                opacity 0.35s ease;
+    max-height: 0;
+    opacity: 0;
+}
+.faq-item.open .faq-answer {
+    max-height: 300px;
+    opacity: 1;
+}
+
+/* ── Footer brand subtle pulse ── */
+.footer-brand h3 {
+    display: inline-block;
+    animation: footerGlow 3s ease-in-out infinite alternate;
+}
+@keyframes footerGlow {
+    from { text-shadow: 0 0 0px transparent; }
+    to   { text-shadow: 0 0 14px rgba(200,169,110,0.5); }
+}
+
+/* ── Nav links underline sweep ── */
+.nav-links a::after {
+    transition: width 0.3s cubic-bezier(.34,1.56,.64,1) !important;
+}
+
+/* ── Chatbot launcher heartbeat ── */
+#lim-chat-launcher {
+    animation: heartbeat 2.8s ease-in-out infinite;
+}
+@keyframes heartbeat {
+    0%, 100% { box-shadow: 0 4px 24px rgba(0,0,0,0.45); }
+    50%       { box-shadow: 0 4px 32px rgba(200,169,110,0.55), 0 0 0 6px rgba(200,169,110,0.12); }
+}
+
+/* ── Input focus glow ── */
+input:focus, textarea:focus, select:focus {
+    box-shadow: 0 0 0 3px rgba(200,169,110,0.18);
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+/* ── Order samples btn bounce ── */
+#order-samples-btn {
+    animation: subtleBounce 3s ease-in-out infinite;
+}
+@keyframes subtleBounce {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-3px); }
 }
