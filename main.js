@@ -365,36 +365,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
-// Order Samples Modal Logic
-document.addEventListener('DOMContentLoaded', () => {
-    const orderBtn = document.getElementById('order-samples-btn');
-    const orderModal = document.getElementById('order-modal');
-    const closeOrderModal = document.getElementById('close-order-modal');
-
+// Order Samples Modal
+(function() {
     const prewrittenMsg = "Hello! I visited the LIM Terrazzo website and I'm interested in ordering samples. Could you please provide more information about available collections and pricing? Thank you!";
 
-    // Set pre-written links
-    const waLink = document.getElementById('order-whatsapp');
-    const emailLink = document.getElementById('order-email');
+    document.addEventListener('DOMContentLoaded', () => {
+        const orderBtn = document.getElementById('order-samples-btn');
+        const orderModal = document.getElementById('order-modal');
+        const closeOrderModal = document.getElementById('close-order-modal');
+        const waLink = document.getElementById('order-whatsapp');
+        const emailLink = document.getElementById('order-email');
+        const igBtn = document.getElementById('order-instagram-btn');
+        const igMsgBox = document.getElementById('instagram-msg-box');
+        const copyBtn = document.getElementById('copy-ig-msg');
 
-    if (waLink) waLink.href = `https://wa.me/4402035140483?text=${encodeURIComponent(prewrittenMsg)}`;
-    if (emailLink) emailLink.href = `mailto:info@limstore.com?subject=Sample%20Order%20Inquiry&body=${encodeURIComponent(prewrittenMsg)}`;
+        // Set pre-filled links
+        if (waLink) waLink.href = `https://wa.me/4402035140483?text=${encodeURIComponent(prewrittenMsg)}`;
+        if (emailLink) emailLink.href = `mailto:info@limstore.com?subject=Sample%20Order%20Inquiry&body=${encodeURIComponent(prewrittenMsg)}`;
 
-    if (orderBtn) {
-        orderBtn.addEventListener('click', () => {
+        // Open modal
+        if (orderBtn) orderBtn.addEventListener('click', () => {
+            igMsgBox.style.display = 'none'; // reset instagram box
             orderModal.classList.add('show');
         });
-    }
 
-    if (closeOrderModal) {
-        closeOrderModal.addEventListener('click', () => {
-            orderModal.classList.remove('show');
-        });
-    }
+        // Close modal
+        if (closeOrderModal) closeOrderModal.addEventListener('click', () => orderModal.classList.remove('show'));
+        if (orderModal) orderModal.addEventListener('click', (e) => { if (e.target === orderModal) orderModal.classList.remove('show'); });
 
-    if (orderModal) {
-        orderModal.addEventListener('click', (e) => {
-            if (e.target === orderModal) orderModal.classList.remove('show');
+        // Instagram — show copy box
+        if (igBtn) igBtn.addEventListener('click', () => {
+            igMsgBox.style.display = 'block';
+            igBtn.style.display = 'none';
         });
-    }
-});
+
+        // Copy message to clipboard
+        if (copyBtn) copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(prewrittenMsg).then(() => {
+                copyBtn.textContent = '✅ Copied!';
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyBtn.innerHTML = '&#128203; Copy Message';
+                    copyBtn.classList.remove('copied');
+                }, 2500);
+            });
+        });
+    });
+})();
