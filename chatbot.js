@@ -1,5 +1,5 @@
 // ============================================================
-//  LIM Terrazzo — Chatbot Widget
+//  LIM Factory — Chatbot Widget
 //  Drop-in script: add <script src="./chatbot.js"></script>
 //  just before </body> in index.html
 // ============================================================
@@ -66,7 +66,7 @@
     {
       keywords: ["contact", "reach", "email", "phone", "whatsapp", "instagram", "get in touch"],
       q: "How can I contact LIM?",
-      a: "You can reach us through multiple channels:\n• 📧 info@limstore.com\n• 📞 +44 (0) 203 514 0483\n• 💬 WhatsApp: +44 (0) 203 514 0483\n• 📸 Instagram: @terrazzobylimfactory\nOr use the **Contact** form on this page."
+      a: "You can reach us through multiple channels:\n• 📧 limfactoryy@gmail.com\n• 📞 +44 (0) 203 514 0483\n• 💬 WhatsApp: +44 (0) 203 514 0483\n• 📸 Instagram: @terrazzobylimfactory\nOr use the **Contact** form on this page."
     },
     {
       keywords: ["floor", "wall", "outdoor", "indoor", "use", "application", "where can i use"],
@@ -128,13 +128,13 @@
 
     if (best && bestScore > 0) return best.a;
 
-    // Call Claude API for custom queries — strictly scoped to LIM Terrazzo
+    // Call Claude API for custom queries — strictly scoped to LIM Factory
     try {
-      const systemPrompt = `You are a customer support assistant exclusively for LIM Terrazzo — a luxury bespoke terrazzo tile brand based in London.
+      const systemPrompt = `You are a customer support assistant exclusively for LIM Factory — a luxury bespoke terrazzo tile brand based in London.
 
 YOUR STRICT RULES:
-1. ONLY answer questions about LIM Terrazzo, terrazzo tiles, collections, pricing, ordering, installation, maintenance, showroom, contact, or related topics.
-2. If the user asks ANYTHING unrelated to LIM or terrazzo (e.g. general knowledge, coding, math, news, other brands, weather, etc.), respond ONLY with: "I'm here specifically to help with LIM Terrazzo questions. For anything else, feel free to reach us at info@limstore.com or +44 (0) 203 514 0483. 😊"
+1. ONLY answer questions about LIM Factory, terrazzo tiles, collections, pricing, ordering, installation, maintenance, showroom, contact, or related topics.
+2. If the user asks ANYTHING unrelated to LIM or terrazzo (e.g. general knowledge, coding, math, news, other brands, weather, etc.), respond ONLY with: "I'm here specifically to help with LIM Factory questions. For anything else, feel free to reach us at limfactoryy@gmail.com or +44 (0) 203 514 0483. 😊"
 3. Never break character or explain that you are an AI model.
 4. Keep answers concise, warm, and professional.
 5. Always encourage the customer to visit the showroom, contact via WhatsApp, or email for orders.
@@ -142,7 +142,7 @@ YOUR STRICT RULES:
 COMPANY FACTS:
 - Showroom: 106 Columbia Road, London E2 7RG
 - Phone/WhatsApp: +44 (0) 203 514 0483
-- Email: info@limstore.com
+- Email: limfactoryy@gmail.com
 - Instagram: @terrazzobylimfactory
 - 20+ years of excellence, 100% recycled marble
 - Collections: Geometric, Organic, Cristal
@@ -174,7 +174,7 @@ ${QA.map(q => `Q: ${q.q}\nA: ${q.a}`).join('\n\n')}`;
       console.error("Claude API Error:", e);
     }
 
-    return "I'm not sure about that yet, but our team would love to help! 📧 info@limstore.com or call +44 (0) 203 514 0483.";
+    return "I'm not sure about that yet, but our team would love to help! 📧 limfactoryy@gmail.com or call +44 (0) 203 514 0483.";
   }
 
   /* ── Markdown-lite renderer ─────────────────────────────── */
@@ -480,7 +480,7 @@ ${QA.map(q => `Q: ${q.q}\nA: ${q.a}`).join('\n\n')}`;
     <div id="lim-chat-header">
       <div class="lim-chat-avatar">✦</div>
       <div class="lim-chat-header-info">
-        <h4>LIM Terrazzo</h4>
+        <h4>LIM Factory</h4>
         <span><span class="lim-online-dot"></span>Online · replies instantly</span>
       </div>
       <button id="lim-chat-close" aria-label="Close chat">✕</button>
@@ -593,7 +593,7 @@ ${QA.map(q => `Q: ${q.q}\nA: ${q.a}`).join('\n\n')}`;
 
   /* ── Boot: welcome message ───────────────────────────────── */
   setTimeout(() => {
-    addMessage("👋 Welcome to **LIM Terrazzo**! I'm here to answer any questions about our bespoke tile collections, sizing, customisation, and more. How can I help you today?", 'bot');
+    addMessage("👋 Welcome to **LIM Factory**! I'm here to answer any questions about our bespoke tile collections, sizing, customisation, and more. How can I help you today?", 'bot');
     buildSuggestions(SUGGESTIONS.slice(0, 4));
   }, 400);
 
