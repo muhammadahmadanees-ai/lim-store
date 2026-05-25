@@ -263,20 +263,10 @@ document.addEventListener('DOMContentLoaded', () => {
     loadCollections();
 
     // Handle Back Button
-    const backBtn = document.getElementById("back-to-collections");
+    const backBtn = document.getElementById('back-to-collections');
     if (backBtn) {
-        backBtn.addEventListener("click", showCollectionsView);
+        backBtn.addEventListener('click', showCollectionsView);
     }
-
-    // Dynamically position back button just below navbar
-    function updateBackBtnPosition() {
-        if (backBtn) {
-            backBtn.style.top = (navbar.offsetHeight + 8) + "px";
-        }
-    }
-    updateBackBtnPosition();
-    window.addEventListener("resize", updateBackBtnPosition);
-    window.addEventListener("scroll", updateBackBtnPosition);
 
     // 6. Modal Logic
     const modal = document.getElementById('product-modal');
@@ -373,4 +363,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
+});
+
+// Order Samples Modal Logic
+document.addEventListener('DOMContentLoaded', () => {
+    const orderBtn = document.getElementById('order-samples-btn');
+    const orderModal = document.getElementById('order-modal');
+    const closeOrderModal = document.getElementById('close-order-modal');
+
+    const prewrittenMsg = "Hello! I visited the LIM Terrazzo website and I'm interested in ordering samples. Could you please provide more information about available collections and pricing? Thank you!";
+
+    // Set pre-written links
+    const waLink = document.getElementById('order-whatsapp');
+    const emailLink = document.getElementById('order-email');
+
+    if (waLink) waLink.href = `https://wa.me/4402035140483?text=${encodeURIComponent(prewrittenMsg)}`;
+    if (emailLink) emailLink.href = `mailto:info@limstore.com?subject=Sample%20Order%20Inquiry&body=${encodeURIComponent(prewrittenMsg)}`;
+
+    if (orderBtn) {
+        orderBtn.addEventListener('click', () => {
+            orderModal.classList.add('show');
+        });
+    }
+
+    if (closeOrderModal) {
+        closeOrderModal.addEventListener('click', () => {
+            orderModal.classList.remove('show');
+        });
+    }
+
+    if (orderModal) {
+        orderModal.addEventListener('click', (e) => {
+            if (e.target === orderModal) orderModal.classList.remove('show');
+        });
+    }
 });
