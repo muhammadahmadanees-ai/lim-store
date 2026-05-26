@@ -132,6 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let key in rawData) {
             // Lowercase and remove any spaces/underscores so "Image URL" or "image_url" matches "imageurl"
             const cleanKey = key.toLowerCase().replace(/[\s_]+/g, '');
+            if (key !== cleanKey && rawData.hasOwnProperty(cleanKey)) continue;
             data[cleanKey] = rawData[key];
         }
         return {
