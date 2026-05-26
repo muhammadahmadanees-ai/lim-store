@@ -1,29 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // 0. Theme Toggle Logic
-    const themeToggle = document.getElementById('theme-toggle');
-    const themeIcon = document.getElementById('theme-icon');
-
-    // Check local storage or system preference
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'light') {
-        document.documentElement.setAttribute('data-theme', 'light');
-        themeIcon.innerHTML = '&#9789;'; // Moon icon
-    }
-
-    themeToggle.addEventListener('click', () => {
-        const root = document.documentElement;
-        if (root.getAttribute('data-theme') === 'light') {
-            root.removeAttribute('data-theme');
-            localStorage.setItem('theme', 'dark');
-            themeIcon.innerHTML = '&#9728;'; // Sun icon
-        } else {
-            root.setAttribute('data-theme', 'light');
-            localStorage.setItem('theme', 'light');
-            themeIcon.innerHTML = '&#9789;'; // Moon icon
-        }
-    });
-
     // 1. Sticky Navigation Effect
     const navbar = document.getElementById('navbar');
 
@@ -55,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 3. Simple Form Submission Simulation
+    // 3. Form Submission to Firebase
     const form = document.getElementById('inquiry-form');
     if (form) {
         form.addEventListener('submit', (e) => {
@@ -65,16 +41,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const email   = document.getElementById('email').value;
             const message = document.getElementById('message').value;
 
-            const subject  = encodeURIComponent(`Inquiry from ${name}`);
-            const body     = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`);
-            const gmailUrl = `https://mail.google.com/mail/?view=cm&to=limfactoryy%40gmail.com&su=${subject}&body=${body}`;
-
-            btn.textContent  = 'Opening Gmail...';
+            btn.textContent  = 'Sending...';
             btn.style.opacity = '0.8';
-            window.open(gmailUrl, '_blank');
 
-            setTimeout(() => {
-                btn.textContent = '\u2705 Gmail Opened!';
+            const db = firebase.firestore();
+            db.collection("orders").add({
+                type: 'General Inquiry',
+                name: name,
+                email: email,
+                message: message,
+                status: 'new',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                btn.textContent = '\u2705 Inquiry Sent!';
                 btn.style.backgroundColor = '#4caf50';
                 form.reset();
                 setTimeout(() => {
@@ -82,7 +61,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     btn.style.backgroundColor = '';
                     btn.style.opacity = '1';
                 }, 3000);
-            }, 800);
+            }).catch((error) => {
+                console.error("Error writing document: ", error);
+                btn.textContent = 'Error! Try again.';
+                btn.style.backgroundColor = 'red';
+                setTimeout(() => {
+                    btn.textContent = 'Send Inquiry';
+                    btn.style.backgroundColor = '';
+                    btn.style.opacity = '1';
+                }, 3000);
+            });
         });
     }
 
@@ -360,20 +348,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 7. Theme Toast Notification
-    const toast = document.getElementById('theme-toast');
-    if (toast) {
-        // Show toast after 1 second
-        setTimeout(() => {
-            toast.classList.add('show');
-        }, 1000);
-
-        // Hide toast after 10 seconds visibility
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 11000);
-    }
-
 
 });
 
@@ -440,15 +414,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (form) form.addEventListener('submit', e => {
             e.preventDefault();
             const data = Object.fromEntries(new FormData(form));
-            const msg = `Hello LIM Team!%0A%0AI would like to request tile samples.%0A%0AName: ${data.name}%0AEmail: ${data.email}%0APhone: ${data.phone || 'N/A'}%0ACollection: ${data.collection}%0ATile: ${data.tile || 'Not specified'}%0AQuantity: ${data.quantity} sample(s)%0A%0AShipping Address:%0A${data.address}%0A${data.city} ${data.postcode}%0A${data.country}%0A%0ANotes: ${data.notes || 'None'}%0A%0AThank you!`;
-
+            
             submitBtn.textContent = 'Sending...';
             submitBtn.style.opacity = '0.8';
 
-            // Send via mailto
-            window.location.href = `https://mail.google.com/mail/?view=cm&to=limfactoryy%40gmail.com&su=Sample%20Request%20from%20${encodeURIComponent(data.name)}&body=${msg}`;
-
-            setTimeout(() => {
+            const db = firebase.firestore();
+            db.collection("orders").add({
+                type: 'Sample Request',
+                name: data.name,
+                email: data.email,
+                phone: data.phone || '',
+                collection: data.collection || '',
+                tile: data.tile || '',
+                quantity: data.quantity || '',
+                address: data.address || '',
+                city: data.city || '',
+                postcode: data.postcode || '',
+                country: data.country || '',
+                notes: data.notes || '',
+                status: 'new',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
                 submitBtn.textContent = '✅ Request Sent!';
                 submitBtn.style.backgroundColor = '#4caf50';
                 form.reset();
@@ -458,7 +444,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     submitBtn.style.opacity = '1';
                     modal.classList.remove('show');
                 }, 3000);
-            }, 1000);
+            }).catch((error) => {
+                console.error("Error saving sample request: ", error);
+                submitBtn.textContent = 'Error!';
+                submitBtn.style.backgroundColor = 'red';
+                setTimeout(() => {
+                    submitBtn.textContent = 'Send Sample Request';
+                    submitBtn.style.backgroundColor = '';
+                    submitBtn.style.opacity = '1';
+                }, 3000);
+            });
         });
     });
 })();
