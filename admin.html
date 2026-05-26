@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIM Factory | Admin Panel</title>
+    
+    <!-- Google Fonts: Outfit for modern, premium look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="./admin.css">
+    
+    <!-- Firebase Compat SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-analytics-compat.js"></script>
+
+    <!-- App Scripts -->
+    <script src="./firebase.js" defer></script>
+    <script src="./admin.js" defer></script>
+</head>
+<body>
+
+    <!-- Login Section -->
+    <div id="login-container" class="admin-login-wrapper">
+        <div class="login-box">
+            <h2>Admin Login</h2>
+            <p>Please enter your credentials to access the admin panel.</p>
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Email Address" required>
+                <input type="password" id="login-password" placeholder="Password" required>
+                <button type="submit" class="btn">Login</button>
+            </form>
+            <p id="login-error" class="error-msg" style="display:none; color: red; margin-top: 10px;"></p>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard Section -->
+    <div id="admin-dashboard" style="display: none;">
+        <header id="admin-navbar">
+            <div class="container nav-container" style="justify-content: space-between;">
+                <div class="logo">
+                    <h2>LIM Admin</h2>
+                </div>
+                <div>
+                    <button id="logout-btn" class="btn" style="background-color: transparent; border: 1px solid white;">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="container admin-content">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="collections">Collections</button>
+                <button class="tab-btn" data-tab="orders">Orders</button>
+            </div>
+
+            <!-- Collections Tab -->
+            <div id="tab-collections" class="tab-content active">
+                <div class="header-action">
+                    <h3>Manage Collections</h3>
+                    <button id="add-collection-btn" class="btn"><i class="fas fa-plus"></i> Add Collection</button>
+                </div>
+                <div id="admin-collections-list" class="admin-grid">
+                    <!-- Collections will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Products View (Nested under Collections) -->
+            <div id="view-products" class="tab-content" style="display:none;">
+                <div class="header-action">
+                    <div>
+                        <button id="back-to-collections-btn" class="btn" style="background: var(--light-bg); color: var(--text-color); margin-right: 15px;"><i class="fas fa-arrow-left"></i> Back</button>
+                        <h3 id="current-collection-name" style="display: inline-block;">Collection Products</h3>
+                    </div>
+                    <button id="add-product-btn" class="btn"><i class="fas fa-plus"></i> Add Product</button>
+                </div>
+                <div id="admin-products-list" class="admin-grid">
+                    <!-- Products will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Orders Tab -->
+            <div id="tab-orders" class="tab-content">
+                <div class="header-action">
+                    <h3>Manage Orders & Inquiries</h3>
+                </div>
+                <div class="orders-table-wrapper">
+                    <table class="orders-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Name</th>
+                                <th>Email / Phone</th>
+                                <th>Type</th>
+                                <th>Details</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-orders-list">
+                            <!-- Orders will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals for Add/Edit -->
+    <!-- Collection Modal -->
+    <div id="collection-modal" class="modal">
+        <div class="modal-content admin-modal">
+            <span class="close-btn" id="close-collection-modal">&times;</span>
+            <h3 id="collection-modal-title">Add Collection</h3>
+            <form id="collection-form">
+                <input type="hidden" id="collection-id">
+                <div class="form-group">
+                    <label>Collection Name</label>
+                    <input type="text" id="col-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="col-desc" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Cover Image URL</label>
+                    <input type="url" id="col-img">
+                </div>
+                <div class="form-group">
+                    <label>Sort Order (Number)</label>
+                    <input type="number" id="col-order" value="0">
+                </div>
+                <button type="submit" class="btn" style="width: 100%;">Save Collection</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div id="product-modal-admin" class="modal">
+        <div class="modal-content admin-modal">
+            <span class="close-btn" id="close-product-modal">&times;</span>
+            <h3 id="product-modal-title">Add Product</h3>
+            <form id="product-form">
+                <input type="hidden" id="product-id">
+                <div class="form-group">
+                    <label>Product Name</label>
+                    <input type="text" id="prod-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Price</label>
+                    <input type="text" id="prod-price" placeholder="e.g. £120.00 / sqm">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="prod-desc" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Product Image URL</label>
+                    <input type="url" id="prod-img">
+                </div>
+                <div class="form-group">
+                    <label>Sizes/Specs Image URL (Optional)</label>
+                    <input type="url" id="prod-sizes-img">
+                </div>
+                <div class="form-group">
+                    <label>Sort Order (Number)</label>
+                    <input type="number" id="prod-order" value="0">
+                </div>
+                <button type="submit" class="btn" style="width: 100%;">Save Product</button>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>
