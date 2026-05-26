@@ -78,11 +78,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Helper to extract fields case-insensitively
     function extractData(rawData) {
+        // Build a lowercase key map without skipping any keys
         const data = {};
         for (let key in rawData) {
             const cleanKey = key.toLowerCase().replace(/[\s_]+/g, '');
-            if (key !== cleanKey && rawData.hasOwnProperty(cleanKey)) continue;
-            data[cleanKey] = rawData[key];
+            // Last-write wins for duplicate normalized keys, prefer the exact match
+            if (!(cleanKey in data) || key === cleanKey) {
+                data[cleanKey] = rawData[key];
+            }
         }
         return {
             name: data.name || data.title || 'Unnamed',
@@ -90,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
             img: data.imageurl || data.imgurl || data.image || data.img || data.pic || '',
             sizesImg: data.sizesimageurl || data.sizeimage || data.sizesimage || data.sizepic || '',
             price: data.price || data.cost || '',
-            order: rawData.order || 0
+            order: (rawData.order !== undefined && rawData.order !== null) ? rawData.order : 0
         };
     }
 
@@ -134,7 +137,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 collectionsList.appendChild(card);
             });
         }, (error) => {
-            collectionsList.innerHTML = `<p style="color:red;">Error loading collections: ${error.message}</p>`;
+            // If orderBy fails (missing index or field), fall back to unordered query
+            console.warn("orderBy failed, falling back to unordered:", error.message);
+            db.collection("collections").onSnapshot((snapshot) => {
+                collectionsList.innerHTML = '';
+                if (snapshot.empty) { collectionsList.innerHTML = '<p>No collections found.</p>'; return; }
+                const docs = [];
+                snapshot.forEach(doc => docs.push(doc));
+                docs.sort((a, b) => (a.data().order || 0) - (b.data().order || 0));
+                docs.forEach((doc) => {
+                    const raw = doc.data();
+                    const data = extractData(raw);
+                    const card = document.createElement('div');
+                    card.className = 'admin-card';
+                    card.innerHTML = `
+                        <div class="admin-card-img" style="background-image: url('${data.img}')">
+                            ${(!data.img) ? 'No Image' : ''}
+                        </div>
+                        <div class="admin-card-content">
+                            <h4>${data.name}</h4>
+                            <p class="admin-card-desc">${data.desc}</p>
+                            <p style="font-size: 0.8rem; color: #999;">Order: ${data.order}</p>
+                            <div class="admin-actions">
+                                <button class="admin-btn admin-btn-view" onclick="openProducts('${doc.id}', '${data.name.replace(/'/g, "\\'")}')">Products</button>
+                                <button class="admin-btn admin-btn-edit" onclick="editCollection('${doc.id}')"><i class="fas fa-edit"></i> Edit</button>
+                                <button class="admin-btn admin-btn-delete" onclick="deleteCollection('${doc.id}')"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    `;
+                    collectionsList.appendChild(card);
+                });
+            });
         });
     }
 
@@ -151,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = document.getElementById('collection-id').value;
         const data = {
             name: document.getElementById('col-name').value,
-            desc: document.getElementById('col-desc').value,
+            description: document.getElementById('col-desc').value,
             img: document.getElementById('col-img').value,
             order: parseInt(document.getElementById('col-order').value) || 0
         };
@@ -162,14 +195,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (id) {
             // Update
-            db.collection("collections").doc(id).update(data).then(() => {
+            db.collection("collections").doc(id).set(data, { merge: true }).then(() => {
                 colModal.classList.remove('show');
-            }).finally(() => { btn.textContent = 'Save Collection'; btn.disabled = false; });
+            }).catch((err) => { console.error("Save error:", err); alert("Error saving: " + err.message); })
+              .finally(() => { btn.textContent = 'Save Collection'; btn.disabled = false; });
         } else {
             // Add
             db.collection("collections").add(data).then(() => {
                 colModal.classList.remove('show');
-            }).finally(() => { btn.textContent = 'Save Collection'; btn.disabled = false; });
+            }).catch((err) => { console.error("Save error:", err); alert("Error saving: " + err.message); })
+              .finally(() => { btn.textContent = 'Save Collection'; btn.disabled = false; });
         }
     });
 
@@ -254,7 +289,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 productsList.appendChild(card);
             });
         }, (error) => {
-            productsList.innerHTML = `<p style="color:red;">Error loading products: ${error.message}</p>`;
+            // Fallback: client-side sort if orderBy index is missing
+            console.warn("Products orderBy failed, falling back:", error.message);
+            db.collection("collections").doc(colId).collection("products").onSnapshot((snapshot) => {
+                productsList.innerHTML = '';
+                if (snapshot.empty) { productsList.innerHTML = '<p>No products found in this collection.</p>'; return; }
+                const docs = [];
+                snapshot.forEach(doc => docs.push(doc));
+                docs.sort((a, b) => (a.data().order || 0) - (b.data().order || 0));
+                docs.forEach((doc) => {
+                    const raw = doc.data();
+                    const data = extractData(raw);
+                    const card = document.createElement('div');
+                    card.className = 'admin-card';
+                    card.innerHTML = `
+                        <div class="admin-card-img" style="background-image: url('${data.img}')">
+                            ${(!data.img) ? 'No Image' : ''}
+                        </div>
+                        <div class="admin-card-content">
+                            <h4>${data.name}</h4>
+                            ${data.price ? `<p style="color:var(--primary-color); font-weight:bold; margin-bottom: 5px;">${data.price}</p>` : ''}
+                            <p class="admin-card-desc">${data.desc}</p>
+                            <p style="font-size: 0.8rem; color: #999;">Order: ${data.order}</p>
+                            <div class="admin-actions">
+                                <button class="admin-btn admin-btn-edit" onclick="editProduct('${colId}', '${doc.id}')"><i class="fas fa-edit"></i> Edit</button>
+                                <button class="admin-btn admin-btn-delete" onclick="deleteProduct('${colId}', '${doc.id}')"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    `;
+                    productsList.appendChild(card);
+                });
+            });
         });
     }
 
@@ -274,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = {
             name: document.getElementById('prod-name').value,
             price: document.getElementById('prod-price').value,
-            desc: document.getElementById('prod-desc').value,
+            description: document.getElementById('prod-desc').value,
             img: document.getElementById('prod-img').value,
             sizesimageurl: document.getElementById('prod-sizes-img').value,
             order: parseInt(document.getElementById('prod-order').value) || 0
@@ -285,13 +350,15 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.disabled = true;
 
         if (id) {
-            db.collection("collections").doc(currentCollectionId).collection("products").doc(id).update(data).then(() => {
+            db.collection("collections").doc(currentCollectionId).collection("products").doc(id).set(data, { merge: true }).then(() => {
                 prodModal.classList.remove('show');
-            }).finally(() => { btn.textContent = 'Save Product'; btn.disabled = false; });
+            }).catch((err) => { console.error("Save error:", err); alert("Error saving: " + err.message); })
+              .finally(() => { btn.textContent = 'Save Product'; btn.disabled = false; });
         } else {
             db.collection("collections").doc(currentCollectionId).collection("products").add(data).then(() => {
                 prodModal.classList.remove('show');
-            }).finally(() => { btn.textContent = 'Save Product'; btn.disabled = false; });
+            }).catch((err) => { console.error("Save error:", err); alert("Error saving: " + err.message); })
+              .finally(() => { btn.textContent = 'Save Product'; btn.disabled = false; });
         }
     });
 
