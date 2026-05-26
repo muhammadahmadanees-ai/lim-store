@@ -76,12 +76,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ─── HELPER FUNCTION ─────────────────────────────────────────
     // Helper to extract fields case-insensitively
     function extractData(rawData) {
         const data = {};
         for (let key in rawData) {
             const cleanKey = key.toLowerCase().replace(/[\s_]+/g, '');
+            if (key !== cleanKey && rawData.hasOwnProperty(cleanKey)) continue;
             data[cleanKey] = rawData[key];
         }
         return {
