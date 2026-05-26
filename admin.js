@@ -235,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabCollections = document.getElementById('tab-collections');
     const productsList = document.getElementById('admin-products-list');
     const addProductBtn = document.getElementById('add-product-btn');
-    const prodModal = document.getElementById('product-modal-admin');
+    const prodModal = document.getElementById('product-modal');
     const prodForm = document.getElementById('product-form');
     const prodClose = document.getElementById('close-product-modal');
     
