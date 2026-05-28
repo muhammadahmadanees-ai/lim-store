@@ -313,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Let the largest dimension be represented by 120 pixels
             const scale = 120 / maxDim;
 
-            let boxesHtml = `<div class="sizes-wrapper">`;
+            let boxesHtml = `<h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; font-size: 0.95rem; letter-spacing: 0.05em; text-transform: uppercase; color: #555;">Sizes available</h4><div class="sizes-header-line" style="margin-top:0; margin-bottom: 1.5rem;"></div><div class="sizes-wrapper" style="margin-top: 0;">`;
             sizesArray.forEach(size => {
                 const match = size.match(/(\d+)\s*[xX]\s*(\d+)/);
                 let width = 60;
