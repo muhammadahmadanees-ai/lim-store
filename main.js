@@ -140,6 +140,8 @@ document.addEventListener('DOMContentLoaded', () => {
             desc: data.description || data.desc || data.detail || '',
             img: data.imageurl || data.imgurl || data.image || data.img || data.pic || '',
             sizesImg: data.sizesimageurl || data.sizeimage || data.sizesimage || data.sizepic || '',
+            sizes: data.sizes || data.size || '',
+            refcode: data.refcode || data.referencecode || data.code || data.refercode || '',
             price: data.price || data.cost || ''
         };
     }
@@ -155,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const card = document.createElement('div');
                     card.className = 'collection-card';
 
-                    const imageStyle = fields.img ? `style="background-image: url('${fields.img}'); background-size: contain; background-repeat: no-repeat; background-position: center; color: transparent;"` : '';
+                    const imageStyle = fields.img ? `style="background-image: url('${fields.img}'); background-size: contain; background-repeat: no-repeat; background-position: center; color: transparent; padding: 1.5rem; background-origin: content-box;"` : '';
                     const imageText = fields.img ? '' : 'Image loaded from Firebase';
 
                     card.innerHTML = `
@@ -207,8 +209,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.className = 'collection-card';
 
                 const priceHtml = fields.price ? `<p style="color: var(--accent-color); font-weight: bold; margin-bottom: 0;">${fields.price}</p>` : '';
+                const refCodeHtml = fields.refcode ? `<span class="ref-code" style="margin-left:auto;">${fields.refcode}</span>` : '';
 
-                const imageStyle = fields.img ? `style="background-image: url('${fields.img}'); background-size: contain; background-repeat: no-repeat; background-position: center; color: transparent;"` : '';
+                const imageStyle = fields.img ? `style="background-image: url('${fields.img}'); background-size: contain; background-repeat: no-repeat; background-position: center; color: transparent; padding: 1.5rem; background-origin: content-box;"` : '';
                 const imageText = fields.img ? '' : 'Product Image';
 
                 card.innerHTML = `
@@ -216,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span>${imageText}</span>
                     </div>
                     <div class="card-content">
-                        <h3>${fields.name}</h3>
+                        <h3 style="display:flex; align-items:baseline; flex-wrap:wrap; gap:0.5rem;">${fields.name} ${refCodeHtml}</h3>
                         ${priceHtml}
                         <p class="card-desc" style="margin-top: 0.5rem;">${fields.desc}</p>
                         <a href="#" class="link view-details-btn">View Details &rarr;</a>
@@ -228,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const viewBtn = card.querySelector('.view-details-btn');
                 viewBtn.addEventListener('click', (e) => {
                     e.preventDefault();
-                    window.openModal(fields.name, fields.desc, fields.img, fields.sizesImg);
+                    window.openModal(fields.name, fields.desc, fields.img, fields.sizesImg, fields.refcode, fields.sizes);
                 });
 
                 // Click listener for image lightbox
@@ -268,8 +271,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeBtn = modal ? modal.querySelector('.close-btn') : null;
 
     // Make openModal available globally or within the closure
-    window.openModal = function (title, desc, img, sizesImg) {
-        document.getElementById('modal-title').textContent = title;
+    window.openModal = function (title, desc, img, sizesImg, refcode, sizes) {
+        document.getElementById('modal-title').childNodes[0].nodeValue = title + " ";
+        const refCodeEl = document.getElementById('modal-ref-code');
+        if (refcode) {
+            refCodeEl.textContent = refcode;
+            refCodeEl.style.display = 'inline-block';
+        } else {
+            refCodeEl.style.display = 'none';
+        }
         document.getElementById('modal-desc').textContent = desc;
 
         const modalImg = document.getElementById('modal-image');
@@ -286,6 +296,46 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             modalSizesImg.style.display = 'none';
             modalSizesImg.src = '';
+        }
+
+        const sizesContainer = document.getElementById('modal-sizes-container');
+        if (sizes) {
+            const sizesArray = sizes.split(',').map(s => s.trim()).filter(s => s);
+            
+            // Calculate global max dimension for this product to ensure proportional scaling
+            let maxDim = 1;
+            sizesArray.forEach(size => {
+                const match = size.match(/(\d+)\s*[xX]\s*(\d+)/);
+                if (match) {
+                    maxDim = Math.max(maxDim, parseInt(match[1]), parseInt(match[2]));
+                }
+            });
+            // Let the largest dimension be represented by 120 pixels
+            const scale = 120 / maxDim;
+
+            let boxesHtml = `<div class="sizes-wrapper">`;
+            sizesArray.forEach(size => {
+                const match = size.match(/(\d+)\s*[xX]\s*(\d+)/);
+                let width = 60;
+                let height = 60;
+                if (match) {
+                    width = Math.max(Math.round(parseInt(match[1]) * scale), 20); // Minimum 20px so it's not too tiny
+                    height = Math.max(Math.round(parseInt(match[2]) * scale), 20);
+                } else {
+                    width = 80; height = 80;
+                }
+                boxesHtml += `
+                    <div class="size-item">
+                        <div class="size-box" style="width: ${width}px; height: ${height}px;"></div>
+                        <span class="size-text">${size}</span>
+                    </div>
+                `;
+            });
+            boxesHtml += `</div><div class="sizes-header-line"></div>`;
+            sizesContainer.innerHTML = boxesHtml;
+            sizesContainer.style.display = 'block';
+        } else {
+            sizesContainer.style.display = 'none';
         }
 
         modal.classList.add('show');
