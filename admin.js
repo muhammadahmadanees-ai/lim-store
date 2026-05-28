@@ -92,6 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
             desc: data.description || data.desc || data.detail || '',
             img: data.imageurl || data.imgurl || data.image || data.img || data.pic || '',
             sizesImg: data.sizesimageurl || data.sizeimage || data.sizesimage || data.sizepic || '',
+            sizes: data.sizes || data.size || '',
+            refcode: data.refcode || data.referencecode || data.code || data.refercode || '',
             price: data.price || data.cost || '',
             order: (rawData.order !== undefined && rawData.order !== null) ? rawData.order : 0
         };
@@ -341,7 +343,8 @@ document.addEventListener('DOMContentLoaded', () => {
             price: document.getElementById('prod-price').value,
             description: document.getElementById('prod-desc').value,
             img: document.getElementById('prod-img').value,
-            sizesimageurl: document.getElementById('prod-sizes-img').value,
+            sizes: document.getElementById('prod-sizes').value,
+            refcode: document.getElementById('prod-refcode').value,
             order: parseInt(document.getElementById('prod-order').value) || 0
         };
 
@@ -371,7 +374,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('prod-price').value = data.price;
                 document.getElementById('prod-desc').value = data.desc;
                 document.getElementById('prod-img').value = data.img;
-                document.getElementById('prod-sizes-img').value = data.sizesImg;
+                document.getElementById('prod-sizes').value = data.sizes;
+                document.getElementById('prod-refcode').value = data.refcode;
                 document.getElementById('prod-order').value = data.order;
                 prodModal.classList.add('show');
             }
