@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }, observerOptions);
 
-    document.querySelectorAll('.collection-card, .stat').forEach(el => {
+    document.querySelectorAll('.collection-card, .stat, .fade-in-up').forEach(el => {
         el.style.opacity = '0';
         el.style.transform = 'translateY(30px)';
         el.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
@@ -113,6 +113,18 @@ document.addEventListener('DOMContentLoaded', () => {
         heroView.style.display = 'flex';
         collectionsView.style.display = 'block';
         window.scrollTo({ top: collectionsView.offsetTop - 80, behavior: 'smooth' });
+    }
+
+    // Home button listener
+    const navHomeBtn = document.getElementById('nav-home-btn');
+    if (navHomeBtn) {
+        navHomeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            productsView.style.display = 'none';
+            heroView.style.display = 'flex';
+            collectionsView.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
     }
 
     // Function to show products view
@@ -167,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="card-content">
                             <h3>${fields.name}</h3>
                             <p class="card-desc">${fields.desc}</p>
-                            <a href="#" class="link view-products-btn">View Products &rarr;</a>
+                            <a href="#" class="link view-products-btn">View Products <span class="arrow-icon">&rarr;</span></a>
                         </div>
                     `;
                     collectionsContainer.appendChild(card);
@@ -222,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h3 style="display:flex; align-items:baseline; flex-wrap:wrap; gap:0.5rem;">${fields.name} ${refCodeHtml}</h3>
                         ${priceHtml}
                         <p class="card-desc" style="margin-top: 0.5rem;">${fields.desc}</p>
-                        <a href="#" class="link view-details-btn">View Details &rarr;</a>
+                        <a href="#" class="link view-details-btn">View Details <span class="arrow-icon">&rarr;</span></a>
                     </div>
                 `;
                 productsContainer.appendChild(card);
@@ -268,11 +280,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // 6. Modal Logic
     const modal = document.getElementById('product-modal');
     // Use the close-btn INSIDE product-modal specifically, not the first one on the page
-    const closeBtn = modal ? modal.querySelector('.close-btn') : null;
+    const closeBtn = modal ? modal.querySelector('.pm-close') : null;
 
     // Make openModal available globally or within the closure
     window.openModal = function (title, desc, img, sizesImg, refcode, sizes) {
-        document.getElementById('modal-title').childNodes[0].nodeValue = title + " ";
+        document.getElementById('modal-title').textContent = title;
         const refCodeEl = document.getElementById('modal-ref-code');
         if (refcode) {
             refCodeEl.textContent = refcode;
@@ -282,58 +294,53 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         document.getElementById('modal-desc').textContent = desc;
 
-        const modalImg = document.getElementById('modal-image');
+        const modalImg = document.getElementById('modal-image-img');
         if (img) {
-            modalImg.style.backgroundImage = `url('${img}')`;
+            modalImg.src = img;
+            modalImg.style.display = 'block';
+            modalImg.onclick = function() {
+                window.openLightbox(img);
+            };
         } else {
-            modalImg.style.backgroundImage = 'none';
-        }
-
-        const modalSizesImg = document.getElementById('modal-sizes-img');
-        if (sizesImg) {
-            modalSizesImg.src = sizesImg;
-            modalSizesImg.style.display = 'block';
-        } else {
-            modalSizesImg.style.display = 'none';
-            modalSizesImg.src = '';
+            modalImg.style.display = 'none';
+            modalImg.onclick = null;
         }
 
         const sizesContainer = document.getElementById('modal-sizes-container');
         if (sizes) {
             const sizesArray = sizes.split(',').map(s => s.trim()).filter(s => s);
             
-            // Calculate global max dimension for this product to ensure proportional scaling
-            let maxDim = 1;
+            let boxesHtml = '';
             sizesArray.forEach(size => {
                 const match = size.match(/(\d+)\s*[xX]\s*(\d+)/);
+                let width = 32;
+                let height = 32;
                 if (match) {
-                    maxDim = Math.max(maxDim, parseInt(match[1]), parseInt(match[2]));
+                    width = Math.max(Math.round(parseInt(match[1]) * 0.5), 16); 
+                    height = Math.max(Math.round(parseInt(match[2]) * 0.5), 16);
                 }
-            });
-            // Let the largest dimension be represented by 120 pixels
-            const scale = 120 / maxDim;
-
-            let boxesHtml = `<h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; font-size: 0.95rem; letter-spacing: 0.05em; text-transform: uppercase; color: #555;">Sizes available</h4><div class="sizes-header-line" style="margin-top:0; margin-bottom: 1.5rem;"></div><div class="sizes-wrapper" style="margin-top: 0;">`;
-            sizesArray.forEach(size => {
-                const match = size.match(/(\d+)\s*[xX]\s*(\d+)/);
-                let width = 60;
-                let height = 60;
-                if (match) {
-                    width = Math.max(Math.round(parseInt(match[1]) * scale), 20); // Minimum 20px so it's not too tiny
-                    height = Math.max(Math.round(parseInt(match[2]) * scale), 20);
-                } else {
-                    width = 80; height = 80;
+                let displayText = size;
+                if (!size.toLowerCase().includes('cm') && !size.toLowerCase().includes('mm')) {
+                    displayText += ' cm';
                 }
                 boxesHtml += `
-                    <div class="size-item">
-                        <div class="size-box" style="width: ${width}px; height: ${height}px;"></div>
-                        <span class="size-text">${size}</span>
+                    <div class="pm-size-item">
+                        <div class="pm-size-box" style="width: ${width}px; height: ${height}px;"></div>
+                        <div class="pm-size-label">${displayText}</div>
                     </div>
                 `;
             });
-            boxesHtml += `</div><div class="sizes-header-line"></div>`;
             sizesContainer.innerHTML = boxesHtml;
-            sizesContainer.style.display = 'block';
+            sizesContainer.style.display = 'flex';
+
+            const sizeItems = sizesContainer.querySelectorAll('.pm-size-item');
+            sizeItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    sizeItems.forEach(si => si.classList.remove('selected'));
+                    item.classList.add('selected');
+                });
+            });
+
         } else {
             sizesContainer.style.display = 'none';
         }
