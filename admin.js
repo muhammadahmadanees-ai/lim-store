@@ -121,6 +121,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = extractData(raw);
                 const card = document.createElement('div');
                 card.className = 'admin-card';
+                card.draggable = true;
+                card.dataset.id = doc.id;
                 card.innerHTML = `
                     <div class="admin-card-img" style="background-image: url('${data.img}')">
                         ${(!data.img) ? 'No Image' : ''}
@@ -152,6 +154,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const data = extractData(raw);
                     const card = document.createElement('div');
                     card.className = 'admin-card';
+                card.draggable = true;
+                card.dataset.id = doc.id;
                     card.innerHTML = `
                         <div class="admin-card-img" style="background-image: url('${data.img}')">
                             ${(!data.img) ? 'No Image' : ''}
@@ -273,6 +277,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = extractData(raw);
                 const card = document.createElement('div');
                 card.className = 'admin-card';
+                card.draggable = true;
+                card.dataset.id = doc.id;
                 card.innerHTML = `
                     <div class="admin-card-img" style="background-image: url('${data.img}')">
                         ${(!data.img) ? 'No Image' : ''}
@@ -304,6 +310,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const data = extractData(raw);
                     const card = document.createElement('div');
                     card.className = 'admin-card';
+                card.draggable = true;
+                card.dataset.id = doc.id;
                     card.innerHTML = `
                         <div class="admin-card-img" style="background-image: url('${data.img}')">
                             ${(!data.img) ? 'No Image' : ''}
@@ -458,4 +466,74 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target === colModal) colModal.classList.remove('show');
         if (e.target === prodModal) prodModal.classList.remove('show');
     });
+
+    window.setupDragAndDrop('admin-collections-list', (container) => {
+        const batch = db.batch();
+        const cards = container.querySelectorAll('.admin-card');
+        cards.forEach((card, index) => {
+            const id = card.dataset.id;
+            if (!id) return;
+            batch.update(db.collection('collections').doc(id), { order: index });
+        });
+        batch.commit().then(() => console.log('Collections reordered')).catch(e => console.error(e));
+    });
+
+    window.setupDragAndDrop('admin-products-list', (container) => {
+        if (!currentCollectionId) return;
+        const batch = db.batch();
+        const cards = container.querySelectorAll('.admin-card');
+        cards.forEach((card, index) => {
+            const id = card.dataset.id;
+            if (!id) return;
+            batch.update(db.collection('collections').doc(currentCollectionId).collection('products').doc(id), { order: index });
+        });
+        batch.commit().then(() => console.log('Products reordered')).catch(e => console.error(e));
+    });
+
 });
+    // --- DRAG AND DROP REORDERING --------------------------------
+    window.setupDragAndDrop = function(containerId, onReorderCallback) {
+        const container = document.getElementById(containerId);
+        let draggedItem = null;
+
+        container.addEventListener('dragstart', (e) => {
+            if (!e.target.classList.contains('admin-card')) return;
+            draggedItem = e.target;
+            setTimeout(() => e.target.classList.add('dragging'), 0);
+        });
+
+        container.addEventListener('dragend', (e) => {
+            if (!e.target.classList.contains('admin-card')) return;
+            e.target.classList.remove('dragging');
+            draggedItem = null;
+        });
+
+        container.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const afterElement = getDragAfterElement(container, e.clientY);
+            if (afterElement == null) {
+                container.appendChild(draggedItem);
+            } else {
+                container.insertBefore(draggedItem, afterElement);
+            }
+        });
+
+        container.addEventListener('drop', (e) => {
+            e.preventDefault();
+            onReorderCallback(container);
+        });
+    }
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.admin-card:not(.dragging)')];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
