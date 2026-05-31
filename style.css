@@ -348,14 +348,18 @@ header.scrolled {
     .hero-title {
         font-size: clamp(1.8rem, 8.5vw, 3.2rem);
         white-space: nowrap;
+        margin-bottom: 1.5rem;
     }
     .hero-content {
         align-items: center;
     }
     .hero-text-body {
-        text-align: center;
-        padding: 0 1rem;
+        text-align: justify;
+        padding: 0;
         font-size: 0.95rem;
+    }
+    .hero-content .btn {
+        margin-top: 1.5rem;
     }
 }
 
