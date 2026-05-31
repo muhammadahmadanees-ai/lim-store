@@ -469,6 +469,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     Sortable.create(document.getElementById('admin-collections-list'), {
         animation: 150,
+        swapThreshold: 0.65,
+        ghostClass: 'dragging',
         onEnd: function (evt) {
             const batch = db.batch();
             const cards = evt.to.querySelectorAll('.admin-card');
@@ -483,6 +485,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     Sortable.create(document.getElementById('admin-products-list'), {
         animation: 150,
+        swapThreshold: 0.65,
+        ghostClass: 'dragging',
         onEnd: function (evt) {
             if (!currentCollectionId) return;
             const batch = db.batch();
