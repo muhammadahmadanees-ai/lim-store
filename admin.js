@@ -467,27 +467,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target === prodModal) prodModal.classList.remove('show');
     });
 
-    window.setupDragAndDrop('admin-collections-list', (container) => {
-        const batch = db.batch();
-        const cards = container.querySelectorAll('.admin-card');
-        cards.forEach((card, index) => {
-            const id = card.dataset.id;
-            if (!id) return;
-            batch.update(db.collection('collections').doc(id), { order: index });
-        });
-        batch.commit().then(() => console.log('Collections reordered')).catch(e => console.error(e));
+    Sortable.create(document.getElementById('admin-collections-list'), {
+        animation: 150,
+        onEnd: function (evt) {
+            const batch = db.batch();
+            const cards = evt.to.querySelectorAll('.admin-card');
+            cards.forEach((card, index) => {
+                const id = card.dataset.id;
+                if (!id) return;
+                batch.update(db.collection('collections').doc(id), { order: index });
+            });
+            batch.commit().then(() => console.log('Collections reordered')).catch(e => console.error(e));
+        }
     });
 
-    window.setupDragAndDrop('admin-products-list', (container) => {
-        if (!currentCollectionId) return;
-        const batch = db.batch();
-        const cards = container.querySelectorAll('.admin-card');
-        cards.forEach((card, index) => {
-            const id = card.dataset.id;
-            if (!id) return;
-            batch.update(db.collection('collections').doc(currentCollectionId).collection('products').doc(id), { order: index });
-        });
-        batch.commit().then(() => console.log('Products reordered')).catch(e => console.error(e));
+    Sortable.create(document.getElementById('admin-products-list'), {
+        animation: 150,
+        onEnd: function (evt) {
+            if (!currentCollectionId) return;
+            const batch = db.batch();
+            const cards = evt.to.querySelectorAll('.admin-card');
+            cards.forEach((card, index) => {
+                const id = card.dataset.id;
+                if (!id) return;
+                batch.update(db.collection('collections').doc(currentCollectionId).collection('products').doc(id), { order: index });
+            });
+            batch.commit().then(() => console.log('Products reordered')).catch(e => console.error(e));
+        }
     });
 
 });
