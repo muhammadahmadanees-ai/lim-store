@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return {
             name: data.name || data.title || 'Unnamed',
             desc: data.description || data.desc || data.detail || '',
-            img: data.imageurl || data.imgurl || data.image || data.img || data.pic || '',
+            img: data.img || data.imageurl || data.imgurl || data.image || data.pic || '',
             sizesImg: data.sizesimageurl || data.sizeimage || data.sizesimage || data.sizepic || '',
             sizes: data.sizes || data.size || '',
             refcode: data.refcode || data.referencecode || data.code || data.refercode || '',
