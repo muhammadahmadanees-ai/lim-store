@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return {
             name: catName,
             desc: data.description || data.desc || data.detail || '',
-            img: (catName === 'Tiles') ? 'tiles_cover.png' : (data.img || data.imageurl || data.imgurl || data.image || data.pic || ''),
+            img: data.img || data.imageurl || data.imgurl || data.image || data.pic || '',
             sizesImg: data.sizesimageurl || data.sizeimage || data.sizesimage || data.sizepic || '',
             sizes: data.sizes || data.size || '',
             refcode: data.refcode || data.referencecode || data.code || data.refercode || '',
@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     id: doc.id,
                     name: catName,
                     desc: cleanData.description || cleanData.desc || cleanData.detail || '',
-                    img: (catName === 'Tiles') ? 'tiles_cover.png' : (cleanData.img || cleanData.imageurl || cleanData.imgurl || cleanData.image || cleanData.pic || ''),
+                    img: cleanData.img || cleanData.imageurl || cleanData.imgurl || cleanData.image || cleanData.pic || '',
                     parentId: cleanData.parentid || '',
                     type: cleanData.type || 'collection',
                     order: cleanData.order !== undefined ? Number(cleanData.order) : 0
