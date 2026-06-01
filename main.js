@@ -205,11 +205,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
+            // Populate sample form collection select dynamically
+            const collectionSelect = document.getElementById('sample-form-collection-select');
+            if (collectionSelect) {
+                collectionSelect.innerHTML = '<option value="">Select a collection</option>';
+                const collectionsOnly = collectionsData.filter(c => c.type === 'collection');
+                collectionsOnly.forEach(col => {
+                    const option = document.createElement('option');
+                    option.value = col.name;
+                    option.textContent = col.name;
+                    collectionSelect.appendChild(option);
+                });
+                const notSureOpt = document.createElement('option');
+                notSureOpt.value = 'Not sure — please advise';
+                notSureOpt.textContent = 'Not sure — please advise';
+                collectionSelect.appendChild(notSureOpt);
+            }
+
             // Build layout structure
             container.innerHTML = `
                 <div class="section-header">
                     <h2>Our Collections</h2>
-                    <p>Discover our range of customizable terrazzo tiles, from geometric patterns to organic textures, organized in a modern catalog.</p>
+                    <p>Discover our premium range of customizable terrazzo products, organized in a modern catalog.</p>
                 </div>
                 <div class="category-explorer-layout">
                     <!-- Left Sidebar -->
