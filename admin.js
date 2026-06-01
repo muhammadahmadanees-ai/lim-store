@@ -23,14 +23,101 @@ document.addEventListener('DOMContentLoaded', () => {
             // User is signed in.
             loginContainer.style.display = 'none';
             adminDashboard.style.display = 'block';
-            loadCollections();
-            loadOrders();
+            autoInitializeCategories().then(() => {
+                loadCollections();
+                loadOrders();
+            });
         } else {
             // No user is signed in.
             loginContainer.style.display = 'flex';
             adminDashboard.style.display = 'none';
         }
     });
+
+    async function autoInitializeCategories() {
+        try {
+            const snapshot = await db.collection("collections").get();
+            const cols = [];
+            snapshot.forEach(d => cols.push({ id: d.id, ...d.data() }));
+
+            let changed = false;
+
+            // Find "Tiles"
+            let tiles = cols.find(c => (c.name === "Tiles" || c.title === "Tiles") && c.type === "category");
+            let tilesId = tiles?.id;
+            if (!tilesId) {
+                console.log("Auto-seeding parent 'Tiles' (old site)");
+                const docRef = await db.collection("collections").add({
+                    name: "Tiles",
+                    description: "Explore our signature custom terrazzo tiles and slabs, crafted to stand the test of time.",
+                    img: "https://res.cloudinary.com/doiujqcpw/image/upload/v1779569126/1_1_dexnnd.jpg",
+                    type: "category",
+                    parentId: "",
+                    order: 0
+                });
+                tilesId = docRef.id;
+                changed = true;
+            }
+
+            // Find "Pressed tiles"
+            let pressed = cols.find(c => c.name === "Pressed tiles" && c.type === "category");
+            let pressedId = pressed?.id;
+            if (!pressedId) {
+                console.log("Auto-seeding subcategory 'Pressed tiles' (old site)");
+                const docRef = await db.collection("collections").add({
+                    name: "Pressed tiles",
+                    description: "Traditionally pressed tiles, highly durable and ideal for floors and high-traffic spaces.",
+                    img: "https://res.cloudinary.com/doiujqcpw/image/upload/v1779569126/1_1_dexnnd.jpg",
+                    type: "category",
+                    parentId: tilesId,
+                    order: 0
+                });
+                pressedId = docRef.id;
+                changed = true;
+            }
+
+            // Find "Non pressed tiles"
+            let nonPressed = cols.find(c => c.name === "Non pressed tiles" && c.type === "category");
+            let nonPressedId = nonPressed?.id;
+            if (!nonPressedId) {
+                console.log("Auto-seeding subcategory 'Non pressed tiles' (old site)");
+                const docRef = await db.collection("collections").add({
+                    name: "Non pressed tiles",
+                    description: "Artisan cast non-pressed slabs and tiles, custom-made for countertops, accent walls, and bespoke features.",
+                    img: "https://res.cloudinary.com/doiujqcpw/image/upload/v1780237546/5_2_ysqf1w.jpg",
+                    type: "category",
+                    parentId: tilesId,
+                    order: 1
+                });
+                nonPressedId = docRef.id;
+                changed = true;
+            }
+
+            // Update Terrazzo Tiles (t9vLeATMRrDsIHekOiSB)
+            const tilesDoc = cols.find(c => c.id === "t9vLeATMRrDsIHekOiSB");
+            if (tilesDoc && (tilesDoc.parentId !== pressedId || tilesDoc.type !== "collection")) {
+                console.log("Auto-seeding: Linking 'Terrazzo Tiles' (old site)");
+                await db.collection("collections").doc("t9vLeATMRrDsIHekOiSB").update({
+                    parentId: pressedId,
+                    type: "collection"
+                });
+                changed = true;
+            }
+
+            // Update Terrazzo Slabs (Z14AdoqWwpAVpMnzZ5dl)
+            const slabsDoc = cols.find(c => c.id === "Z14AdoqWwpAVpMnzZ5dl");
+            if (slabsDoc && (slabsDoc.parentId !== nonPressedId || slabsDoc.type !== "collection")) {
+                console.log("Auto-seeding: Linking 'Terrazzo Slabs' (old site)");
+                await db.collection("collections").doc("Z14AdoqWwpAVpMnzZ5dl").update({
+                    parentId: nonPressedId,
+                    type: "collection"
+                });
+                changed = true;
+            }
+        } catch (e) {
+            console.error("Auto-seeding error in admin.js:", e);
+        }
+    }
 
     loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -107,10 +194,43 @@ document.addEventListener('DOMContentLoaded', () => {
     const colForm = document.getElementById('collection-form');
     const colClose = document.getElementById('close-collection-modal');
 
+    let allCollectionsList = [];
+
+    function populateParentSelect(currentId, selectedParentId) {
+        const parentSelect = document.getElementById('col-parent');
+        if (!parentSelect) return;
+        parentSelect.innerHTML = '<option value="">None (Root Category)</option>';
+        
+        allCollectionsList
+            .filter(c => c.type === 'category' && c.id !== currentId)
+            .forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                if (c.id === selectedParentId) {
+                    opt.selected = true;
+                }
+                parentSelect.appendChild(opt);
+            });
+    }
+
     // Load Collections
     function loadCollections() {
         collectionsList.innerHTML = '<p>Loading collections...</p>';
         db.collection("collections").orderBy("order").onSnapshot((snapshot) => {
+            allCollectionsList = [];
+            snapshot.forEach((doc) => {
+                const raw = doc.data();
+                const fields = extractData(raw);
+                allCollectionsList.push({
+                    id: doc.id,
+                    name: fields.name,
+                    type: raw.type || 'collection',
+                    parentId: raw.parentId || '',
+                    order: fields.order
+                });
+            });
+
             collectionsList.innerHTML = '';
             if (snapshot.empty) {
                 collectionsList.innerHTML = '<p>No collections found.</p>';
@@ -119,6 +239,13 @@ document.addEventListener('DOMContentLoaded', () => {
             snapshot.forEach((doc) => {
                 const raw = doc.data();
                 const data = extractData(raw);
+                const type = raw.type || 'collection';
+                const parentId = raw.parentId || '';
+                const parentName = parentId ? (allCollectionsList.find(p => p.id === parentId)?.name || 'Unknown') : '';
+
+                const parentBadge = parentId ? `<span style="background: #f3f4f6; color: #4b5563; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; display: inline-block;">Parent: ${parentName}</span>` : '';
+                const typeBadge = `<span style="background: ${type === 'category' ? '#e0f2fe' : '#f0fdf4'}; color: ${type === 'category' ? '#0369a1' : '#15803d'}; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; font-weight: bold; display: inline-block;">${type}</span>`;
+
                 const card = document.createElement('div');
                 card.className = 'admin-card';
                 card.draggable = true;
@@ -129,10 +256,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="admin-card-content">
                         <h4>${data.name}</h4>
+                        <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px;">
+                            ${typeBadge}
+                            ${parentBadge}
+                        </div>
                         <p class="admin-card-desc">${data.desc}</p>
                         <p style="font-size: 0.8rem; color: #999;">Order: ${data.order}</p>
                         <div class="admin-actions">
-                            <button class="admin-btn admin-btn-view" onclick="openProducts('${doc.id}', '${data.name.replace(/'/g, "\\'")}')">Products</button>
+                            ${type !== 'category' ? `<button class="admin-btn admin-btn-view" onclick="openProducts('${doc.id}', '${data.name.replace(/'/g, "\\'")}')">Products</button>` : ''}
                             <button class="admin-btn admin-btn-edit" onclick="editCollection('${doc.id}')"><i class="fas fa-edit"></i> Edit</button>
                             <button class="admin-btn admin-btn-delete" onclick="deleteCollection('${doc.id}')"><i class="fas fa-trash"></i></button>
                         </div>
@@ -144,6 +275,19 @@ document.addEventListener('DOMContentLoaded', () => {
             // If orderBy fails (missing index or field), fall back to unordered query
             console.warn("orderBy failed, falling back to unordered:", error.message);
             db.collection("collections").onSnapshot((snapshot) => {
+                allCollectionsList = [];
+                snapshot.forEach((doc) => {
+                    const raw = doc.data();
+                    const fields = extractData(raw);
+                    allCollectionsList.push({
+                        id: doc.id,
+                        name: fields.name,
+                        type: raw.type || 'collection',
+                        parentId: raw.parentId || '',
+                        order: fields.order
+                    });
+                });
+
                 collectionsList.innerHTML = '';
                 if (snapshot.empty) { collectionsList.innerHTML = '<p>No collections found.</p>'; return; }
                 const docs = [];
@@ -152,20 +296,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 docs.forEach((doc) => {
                     const raw = doc.data();
                     const data = extractData(raw);
+                    const type = raw.type || 'collection';
+                    const parentId = raw.parentId || '';
+                    const parentName = parentId ? (allCollectionsList.find(p => p.id === parentId)?.name || 'Unknown') : '';
+
+                    const parentBadge = parentId ? `<span style="background: #f3f4f6; color: #4b5563; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; display: inline-block;">Parent: ${parentName}</span>` : '';
+                    const typeBadge = `<span style="background: ${type === 'category' ? '#e0f2fe' : '#f0fdf4'}; color: ${type === 'category' ? '#0369a1' : '#15803d'}; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; font-weight: bold; display: inline-block;">${type}</span>`;
+
                     const card = document.createElement('div');
                     card.className = 'admin-card';
-                card.draggable = true;
-                card.dataset.id = doc.id;
+                    card.draggable = true;
+                    card.dataset.id = doc.id;
                     card.innerHTML = `
                         <div class="admin-card-img" style="background-image: url('${data.img}')">
                             ${(!data.img) ? 'No Image' : ''}
                         </div>
                         <div class="admin-card-content">
                             <h4>${data.name}</h4>
+                            <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px;">
+                                ${typeBadge}
+                                ${parentBadge}
+                            </div>
                             <p class="admin-card-desc">${data.desc}</p>
                             <p style="font-size: 0.8rem; color: #999;">Order: ${data.order}</p>
                             <div class="admin-actions">
-                                <button class="admin-btn admin-btn-view" onclick="openProducts('${doc.id}', '${data.name.replace(/'/g, "\\'")}')">Products</button>
+                                ${type !== 'category' ? `<button class="admin-btn admin-btn-view" onclick="openProducts('${doc.id}', '${data.name.replace(/'/g, "\\'")}')">Products</button>` : ''}
                                 <button class="admin-btn admin-btn-edit" onclick="editCollection('${doc.id}')"><i class="fas fa-edit"></i> Edit</button>
                                 <button class="admin-btn admin-btn-delete" onclick="deleteCollection('${doc.id}')"><i class="fas fa-trash"></i></button>
                             </div>
@@ -180,6 +335,8 @@ document.addEventListener('DOMContentLoaded', () => {
     addCollectionBtn.addEventListener('click', () => {
         colForm.reset();
         document.getElementById('collection-id').value = '';
+        populateParentSelect('', '');
+        document.getElementById('col-type').value = 'collection';
         colModal.classList.add('show');
     });
 
@@ -192,7 +349,9 @@ document.addEventListener('DOMContentLoaded', () => {
             name: document.getElementById('col-name').value,
             description: document.getElementById('col-desc').value,
             img: document.getElementById('col-img').value,
-            order: parseInt(document.getElementById('col-order').value) || 0
+            order: parseInt(document.getElementById('col-order').value) || 0,
+            parentId: document.getElementById('col-parent').value || '',
+            type: document.getElementById('col-type').value || 'collection'
         };
 
         const btn = colForm.querySelector('button');
@@ -217,12 +376,20 @@ document.addEventListener('DOMContentLoaded', () => {
     window.editCollection = function(id) {
         db.collection("collections").doc(id).get().then((doc) => {
             if (doc.exists) {
-                const data = extractData(doc.data());
+                const raw = doc.data();
+                const data = extractData(raw);
+                const parentId = raw.parentId || '';
+                const type = raw.type || 'collection';
+
                 document.getElementById('collection-id').value = doc.id;
                 document.getElementById('col-name').value = data.name;
                 document.getElementById('col-desc').value = data.desc;
                 document.getElementById('col-img').value = data.img;
                 document.getElementById('col-order').value = data.order;
+                
+                document.getElementById('col-type').value = type;
+                populateParentSelect(doc.id, parentId);
+
                 colModal.classList.add('show');
             }
         });

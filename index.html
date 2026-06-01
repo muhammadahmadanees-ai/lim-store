@@ -31,6 +31,9 @@
     <!-- Navigation -->
     <header id="navbar">
         <div class="container nav-container">
+            <button id="nav-menu-toggle-btn" class="menu-toggle-btn" aria-label="Toggle Menu" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; margin-right: 15px; color: var(--text-color); display: flex; align-items: center; justify-content: center; padding: 4px; transition: color 0.2s;">
+                <i class="fas fa-bars"></i>
+            </button>
             <a href="#" class="logo">
                 <img src="https://res.cloudinary.com/doiujqcpw/image/upload/v1780002822/lim_transparent_logo_2_3_rvmif4.png" alt="LIM Factory Logo" class="logo-img">
                 <span class="logo-text">
@@ -437,6 +440,50 @@
     </div>
 
 
+
+    <!-- Slide-out Left Drawer Menu -->
+    <div id="drawer-backdrop" class="drawer-backdrop"></div>
+    <aside id="menu-drawer" class="menu-drawer">
+        <div class="drawer-header">
+            <h3>Menu</h3>
+            <button id="drawer-close-btn" class="drawer-close-btn" aria-label="Close Menu">&times;</button>
+        </div>
+        <div class="drawer-body">
+            <!-- 1. Product Search Bar -->
+            <div class="drawer-search-wrap">
+                <div class="search-input-container">
+                    <i class="fas fa-search search-bar-icon"></i>
+                    <input type="text" id="drawer-search-input" placeholder="Search products by name or ref..." class="drawer-search-input">
+                    <button id="search-clear-btn" class="search-clear-btn" style="display:none;">&times;</button>
+                </div>
+                <!-- Search results list -->
+                <div id="drawer-search-results" class="drawer-search-results" style="display:none;">
+                    <div id="search-results-list" class="search-results-list"></div>
+                </div>
+            </div>
+
+            <!-- 2. Navigation Section -->
+            <div class="drawer-section">
+                <h4 class="drawer-section-title">Navigation</h4>
+                <ul class="drawer-nav-links">
+                    <li><a href="#" id="drawer-nav-home"><i class="fas fa-home section-link-icon"></i> Home</a></li>
+                    <li><a href="#collections" class="drawer-link"><i class="fas fa-cubes section-link-icon"></i> Collections</a></li>
+                    <li><a href="#about" class="drawer-link"><i class="fas fa-info-circle section-link-icon"></i> About</a></li>
+                    <li><a href="#visualizer" class="drawer-link"><i class="fas fa-palette section-link-icon"></i> Room Visualizer</a></li>
+                    <li><a href="#faq" class="drawer-link"><i class="fas fa-question-circle section-link-icon"></i> FAQ</a></li>
+                    <li><a href="#contact" class="drawer-link"><i class="fas fa-envelope section-link-icon"></i> Contact</a></li>
+                </ul>
+            </div>
+
+            <!-- 3. Dynamic Category Tree Section -->
+            <div class="drawer-section">
+                <h4 class="drawer-section-title">Collections Catalog</h4>
+                <div id="drawer-tree-container" class="drawer-tree-container">
+                    <!-- Tree nodes will be dynamically loaded here in main.js -->
+                </div>
+            </div>
+        </div>
+    </aside>
 
     <!-- Firebase Compat SDK (works without a local server) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>

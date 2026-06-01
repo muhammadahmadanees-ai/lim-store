@@ -130,6 +130,19 @@
                     <input type="text" id="col-name" required>
                 </div>
                 <div class="form-group">
+                    <label>Type</label>
+                    <select id="col-type" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #fff; font-family: var(--font-primary);">
+                        <option value="collection">Product Collection (contains products)</option>
+                        <option value="category">Category Folder (contains subfolders/collections)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Parent Category</label>
+                    <select id="col-parent" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #fff; font-family: var(--font-primary);">
+                        <option value="">None (Root Category)</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label>Description</label>
                     <textarea id="col-desc" rows="3" required></textarea>
                 </div>

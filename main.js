@@ -158,48 +158,328 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Load Collections
-    function loadCollections() {
-        collectionsContainer.innerHTML = '';
-        db.collection("collections").orderBy("order").get().then((querySnapshot) => {
-            if (!querySnapshot.empty) {
-                collectionsContainer.innerHTML = ''; // clear static placeholders
-                querySnapshot.forEach((doc) => {
-                    const fields = extractData(doc.data());
-                    const card = document.createElement('div');
-                    card.className = 'collection-card';
+    let collectionsData = [];
+    let treeRoots = [];
+    let activeNode = null;
+    let expandedNodes = {};
 
-                    const imageStyle = fields.img ? `style="background-image: url('${fields.img}'); background-size: contain; background-repeat: no-repeat; background-position: center; color: transparent; padding: 1.5rem; background-origin: content-box;"` : '';
-                    const imageText = fields.img ? '' : 'Image loaded from Firebase';
+    // Load Collections (Dynamic Tree Explorer)
+    function loadCollections() {
+        const collectionsSec = document.getElementById('collections');
+        if (!collectionsSec) return;
+        const container = collectionsSec.querySelector('.container');
+        if (!container) return;
+
+        container.innerHTML = '<p style="text-align: center; padding: 3rem 0;">Loading collections catalog...</p>';
+
+        db.collection("collections").orderBy("order").get().then((querySnapshot) => {
+            collectionsData = [];
+            querySnapshot.forEach((doc) => {
+                const raw = doc.data();
+                const cleanData = {};
+                for (let key in raw) {
+                    const cleanKey = key.toLowerCase().replace(/[\s_]+/g, '');
+                    cleanData[cleanKey] = raw[key];
+                }
+                collectionsData.push({
+                    id: doc.id,
+                    name: cleanData.name || cleanData.title || 'Unnamed',
+                    desc: cleanData.description || cleanData.desc || cleanData.detail || '',
+                    img: cleanData.img || cleanData.imageurl || cleanData.imgurl || cleanData.image || cleanData.pic || '',
+                    parentId: cleanData.parentid || '',
+                    type: cleanData.type || 'collection',
+                    order: cleanData.order !== undefined ? Number(cleanData.order) : 0
+                });
+            });
+
+            // Build hierarchy
+            treeRoots = buildTree(collectionsData);
+
+            // Auto-expand top levels
+            treeRoots.forEach(r => {
+                expandedNodes[r.id] = true;
+                if (r.children) {
+                    r.children.forEach(c => {
+                        expandedNodes[c.id] = true;
+                    });
+                }
+            });
+
+            // Build layout structure
+            container.innerHTML = `
+                <div class="section-header">
+                    <h2>Our Collections</h2>
+                    <p>Discover our range of customizable terrazzo tiles, from geometric patterns to organic textures, organized in a modern catalog.</p>
+                </div>
+                <div class="category-explorer-layout">
+                    <!-- Left Sidebar -->
+                    <aside class="explorer-sidebar">
+                        <h4 class="sidebar-title">Catalog Explorer</h4>
+                        <div class="tree-container">
+                            <div class="tree-node-header root-header active" id="root-tree-header">
+                                <i class="fas fa-database node-icon"></i>
+                                <span class="node-name" style="font-weight: 500;">All Collections</span>
+                            </div>
+                            <div id="tree-nodes-list-container"></div>
+                        </div>
+                    </aside>
+                    <!-- Right Pane -->
+                    <main class="explorer-main">
+                        <nav class="explorer-breadcrumbs" id="explorer-breadcrumbs-nav"></nav>
+                        <div class="category-info-panel" id="category-info-panel-content"></div>
+                        <div class="grid collections-grid" id="explorer-grid-container"></div>
+                    </main>
+                </div>
+            `;
+
+            // Bind click to root node
+            document.getElementById('root-tree-header').addEventListener('click', () => {
+                selectCategoryNode(null);
+            });
+
+            // Render
+            renderExplorer();
+
+        }).catch((error) => {
+            console.error("Error fetching collections from Firebase:", error);
+            container.innerHTML = '<p style="text-align: center; color: red;">Error loading collections.</p>';
+        });
+    }
+
+    function buildTree(items) {
+        const itemMap = {};
+        const roots = [];
+
+        items.forEach(item => {
+            itemMap[item.id] = { ...item, children: [] };
+        });
+
+        items.forEach(item => {
+            const mapped = itemMap[item.id];
+            if (mapped.parentId && itemMap[mapped.parentId]) {
+                itemMap[mapped.parentId].children.push(mapped);
+            } else {
+                roots.push(mapped);
+            }
+        });
+
+        const sortTree = (node) => {
+            if (node.children) {
+                node.children.sort((a, b) => (a.order || 0) - (b.order || 0));
+                node.children.forEach(sortTree);
+            }
+        };
+
+        roots.forEach(sortTree);
+        roots.sort((a, b) => (a.order || 0) - (b.order || 0));
+        return roots;
+    }
+
+    function selectCategoryNode(node) {
+        if (node === null) {
+            activeNode = null;
+        } else if (node.type === 'collection') {
+            showProductsView(node.id, node.name);
+            return;
+        } else {
+            activeNode = node;
+        }
+        renderExplorer();
+    }
+
+    function renderExplorer() {
+        // Active state of All Collections root header
+        const rootHeader = document.getElementById('root-tree-header');
+        if (rootHeader) {
+            if (activeNode === null) {
+                rootHeader.classList.add('active');
+            } else {
+                rootHeader.classList.remove('active');
+            }
+        }
+
+        // Render Tree in sidebar
+        const treeContainer = document.getElementById('tree-nodes-list-container');
+        if (treeContainer) {
+            treeContainer.innerHTML = '';
+            treeContainer.appendChild(createTreeView(treeRoots));
+        }
+
+        // Render Breadcrumbs
+        const breadcrumbsNav = document.getElementById('explorer-breadcrumbs-nav');
+        if (breadcrumbsNav) {
+            breadcrumbsNav.innerHTML = '';
+
+            const homeCrumb = document.createElement('span');
+            homeCrumb.className = 'breadcrumb-item';
+            homeCrumb.innerHTML = `<i class="fas fa-home" style="margin-right: 4px;"></i> Collections`;
+            homeCrumb.addEventListener('click', () => selectCategoryNode(null));
+            breadcrumbsNav.appendChild(homeCrumb);
+
+            const path = [];
+            let current = activeNode;
+            while (current) {
+                path.unshift(current);
+                current = collectionsData.find(c => c.id === current.parentId);
+            }
+
+            path.forEach((crumb, idx) => {
+                const sep = document.createElement('span');
+                sep.className = 'breadcrumb-sep';
+                sep.textContent = ' > ';
+                breadcrumbsNav.appendChild(sep);
+
+                const item = document.createElement('span');
+                item.className = 'breadcrumb-item';
+                if (idx === path.length - 1) {
+                    item.classList.add('active');
+                } else {
+                    item.addEventListener('click', () => selectCategoryNode(crumb));
+                }
+                item.textContent = crumb.name;
+                breadcrumbsNav.appendChild(item);
+            });
+        }
+
+        // Render Category Info
+        const infoPanel = document.getElementById('category-info-panel-content');
+        if (infoPanel) {
+            infoPanel.innerHTML = `
+                <h3>${activeNode ? activeNode.name : 'Collections Home'}</h3>
+                <p>${activeNode ? activeNode.desc : 'Browse our premium terrazzo products organized by pressing techniques and layouts.'}</p>
+            `;
+        }
+
+        // Render Grid
+        const gridContainer = document.getElementById('explorer-grid-container');
+        if (gridContainer) {
+            gridContainer.innerHTML = '';
+            const content = activeNode ? (activeNode.children || []) : treeRoots;
+
+            if (content.length === 0) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'empty-category-message';
+                emptyDiv.innerHTML = `
+                    <i class="fas fa-folder-open empty-icon"></i>
+                    <p>No subcategories or collections in this folder.</p>
+                `;
+                gridContainer.replaceWith(emptyDiv);
+                emptyDiv.id = 'explorer-grid-container';
+            } else {
+                // Recover grid element if it was replaced by empty state div
+                if (gridContainer.className !== 'grid collections-grid') {
+                    const newGrid = document.createElement('div');
+                    newGrid.className = 'grid collections-grid';
+                    newGrid.id = 'explorer-grid-container';
+                    gridContainer.replaceWith(newGrid);
+                    renderExplorer();
+                    return;
+                }
+
+                content.forEach(item => {
+                    const isCategory = item.type === 'category';
+                    const card = document.createElement('div');
+                    card.className = `collection-card explorer-card ${isCategory ? 'category-folder-card' : ''}`;
+
+                    const imageStyle = item.img ? `style="background-image: url('${item.img}'); background-size: cover; background-repeat: no-repeat; background-position: center; color: transparent;"` : '';
 
                     card.innerHTML = `
-                        <div class="img-placeholder" ${imageStyle}>
-                            <span>${imageText}</span>
+                        <div class="img-placeholder explorer-card-img" ${imageStyle}>
+                            ${!item.img ? `<i class="fas ${isCategory ? 'fa-folder fa-4x' : 'fa-layer-group fa-4x'}" style="color: #ccc;"></i>` : ''}
                         </div>
                         <div class="card-content">
-                            <h3>${fields.name}</h3>
-                            <p class="card-desc">${fields.desc}</p>
-                            <a href="#" class="link view-products-btn">View Products <span class="arrow-icon">&rarr;</span></a>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                <i class="fas ${isCategory ? 'fa-folder' : 'fa-layer-group'}" style="color: var(--accent-color);"></i>
+                                <span style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #888;">
+                                    ${isCategory ? 'Category' : 'Collection'}
+                                </span>
+                            </div>
+                            <h3>${item.name}</h3>
+                            <p class="card-desc">${item.desc}</p>
+                            <a href="#" class="link view-products-btn">
+                                ${isCategory ? 'Open Folder' : 'View Products'} <span class="arrow-icon">&rarr;</span>
+                            </a>
                         </div>
                     `;
-                    collectionsContainer.appendChild(card);
 
-                    // Click listener to load products
-                    const viewBtn = card.querySelector('.view-products-btn');
-                    viewBtn.addEventListener('click', (e) => {
+                    // Handle card click
+                    card.addEventListener('click', (e) => {
                         e.preventDefault();
-                        showProductsView(doc.id, fields.name);
+                        selectCategoryNode(item);
                     });
 
+                    gridContainer.appendChild(card);
+
+                    // Animation support
                     card.style.opacity = '0';
                     card.style.transform = 'translateY(30px)';
                     card.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
                     observer.observe(card);
                 });
             }
-        }).catch((error) => {
-            console.error("Error fetching collections from Firebase:", error);
+        }
+    }
+
+    function createTreeView(nodes) {
+        const ul = document.createElement('ul');
+        ul.className = 'tree-list';
+
+        nodes.forEach(node => {
+            const isCategory = node.type === 'category';
+            const isExpanded = !!expandedNodes[node.id];
+            const isActive = activeNode?.id === node.id;
+            const hasChildren = node.children && node.children.length > 0;
+
+            const li = document.createElement('li');
+            li.className = `tree-node ${isActive ? 'active' : ''}`;
+
+            const header = document.createElement('div');
+            header.className = 'tree-node-header';
+
+            let toggleSpan = '';
+            if (isCategory) {
+                toggleSpan = `<span class="tree-toggle">
+                    <i class="fas ${isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} toggle-icon"></i>
+                </span>`;
+            } else {
+                toggleSpan = `<span class="tree-indent-dot"><i class="far fa-circle"></i></span>`;
+            }
+
+            header.innerHTML = `
+                ${toggleSpan}
+                <i class="fas ${isCategory ? (isExpanded ? 'fa-folder-open' : 'fa-folder') : 'fa-layer-group'} node-icon"></i>
+                <span class="node-name">${node.name}</span>
+            `;
+
+            // Node click listener
+            header.addEventListener('click', (e) => {
+                e.stopPropagation();
+                selectCategoryNode(node);
+            });
+
+            // Toggle expansion click listener
+            if (isCategory) {
+                const toggle = header.querySelector('.tree-toggle');
+                toggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    expandedNodes[node.id] = !expandedNodes[node.id];
+                    renderExplorer();
+                });
+            }
+
+            li.appendChild(header);
+
+            if (isCategory && isExpanded && hasChildren) {
+                const subnodesDiv = document.createElement('div');
+                subnodesDiv.className = 'tree-subnodes';
+                subnodesDiv.appendChild(createTreeView(node.children));
+                li.appendChild(subnodesDiv);
+            }
+
+            ul.appendChild(li);
         });
+
+        return ul;
     }
 
     // Load Products for a specific collection
@@ -275,6 +555,251 @@ document.addEventListener('DOMContentLoaded', () => {
     const backBtn = document.getElementById('back-to-collections');
     if (backBtn) {
         backBtn.addEventListener('click', showCollectionsView);
+    }
+
+    // ==========================================================================
+    // MENU DRAWER CONTROLLERS & GLOBAL SEARCH (FEATURE-PARITY)
+    // ==========================================================================
+    const menuToggleBtn = document.getElementById('nav-menu-toggle-btn');
+    const drawerCloseBtn = document.getElementById('drawer-close-btn');
+    const drawerBackdrop = document.getElementById('drawer-backdrop');
+    const menuDrawer = document.getElementById('menu-drawer');
+
+    function openDrawer() {
+        if (menuDrawer) menuDrawer.classList.add('open');
+        if (drawerBackdrop) drawerBackdrop.classList.add('show');
+        
+        // Populate the dynamic tree in the drawer
+        const drawerTreeContainer = document.getElementById('drawer-tree-container');
+        if (drawerTreeContainer && treeRoots.length > 0) {
+            drawerTreeContainer.innerHTML = '';
+            drawerTreeContainer.appendChild(createDrawerTreeView(treeRoots));
+        }
+
+        // Lazy index all products for search if not indexed yet
+        indexAllProducts();
+    }
+
+    function closeDrawer() {
+        if (menuDrawer) menuDrawer.classList.remove('open');
+        if (drawerBackdrop) drawerBackdrop.classList.remove('show');
+    }
+
+    if (menuToggleBtn) menuToggleBtn.addEventListener('click', openDrawer);
+    if (drawerCloseBtn) drawerCloseBtn.addEventListener('click', closeDrawer);
+    if (drawerBackdrop) drawerBackdrop.addEventListener('click', closeDrawer);
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeDrawer();
+    });
+
+    // Handle drawer nav links scrolling & closing
+    document.querySelectorAll('.drawer-nav-links a').forEach(link => {
+        link.addEventListener('click', (e) => {
+            const href = link.getAttribute('href');
+            if (href === '#') {
+                e.preventDefault();
+                closeDrawer();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (href.startsWith('#')) {
+                closeDrawer();
+            }
+        });
+    });
+
+    // ─── Search Indexing ───
+    let allProductsIndex = [];
+    let isIndexed = false;
+
+    function indexAllProducts() {
+        if (isIndexed) return;
+        
+        collectionsData.forEach(col => {
+            if (col.type === 'category') return; // Folders don't have products directly
+            db.collection("collections").doc(col.id).collection("products").orderBy("order").get().then((pSnapshot) => {
+                pSnapshot.forEach(pDoc => {
+                    const raw = pDoc.data();
+                    const pFields = extractData(raw);
+                    allProductsIndex.push({
+                        id: pDoc.id,
+                        name: pFields.name,
+                        desc: pFields.desc,
+                        img: pFields.img,
+                        price: pFields.price,
+                        refcode: pFields.refcode,
+                        sizes: pFields.sizes,
+                        sizesImg: pFields.sizesImg,
+                        collectionId: col.id,
+                        collectionName: col.name
+                    });
+                });
+            }).catch(err => console.warn(`Error indexing products for ${col.name}:`, err));
+        });
+        
+        isIndexed = true;
+    }
+
+    // ─── Live Search Filter ───
+    const searchInput = document.getElementById('drawer-search-input');
+    const searchResultsWrap = document.getElementById('drawer-search-results');
+    const searchResultsList = document.getElementById('search-results-list');
+    const searchClearBtn = document.getElementById('search-clear-btn');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            const queryVal = searchInput.value.trim().toLowerCase();
+            
+            if (searchClearBtn) {
+                searchClearBtn.style.display = queryVal ? 'block' : 'none';
+            }
+
+            if (!queryVal) {
+                if (searchResultsWrap) searchResultsWrap.style.display = 'none';
+                if (searchResultsList) searchResultsList.innerHTML = '';
+                return;
+            }
+
+            const filtered = allProductsIndex.filter(p => {
+                const matchName = p.name.toLowerCase().includes(queryVal);
+                const matchCode = p.refcode && p.refcode.toLowerCase().includes(queryVal);
+                return matchName || matchCode;
+            });
+
+            renderSearchResults(filtered);
+        });
+    }
+
+    if (searchClearBtn) {
+        searchClearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            searchClearBtn.style.display = 'none';
+            if (searchResultsWrap) searchResultsWrap.style.display = 'none';
+            if (searchResultsList) searchResultsList.innerHTML = '';
+            searchInput.focus();
+        });
+    }
+
+    function renderSearchResults(results) {
+        if (!searchResultsList) return;
+        searchResultsList.innerHTML = '';
+
+        if (results.length === 0) {
+            searchResultsList.innerHTML = '<p class="no-search-results">No products match your search.</p>';
+            if (searchResultsWrap) searchResultsWrap.style.display = 'block';
+            return;
+        }
+
+        results.forEach(prod => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'search-result-item';
+            
+            const thumbStyle = prod.img ? `style="background-image: url('${prod.img}')"` : '';
+            const refCodeHtml = prod.refcode ? `<span class="ref-code search-ref-code">${prod.refcode}</span>` : '';
+            const priceHtml = prod.price ? `<span class="search-result-price">${prod.price}</span>` : '';
+
+            itemDiv.innerHTML = `
+                <div class="search-result-thumb" ${thumbStyle}></div>
+                <div class="search-result-info">
+                    <div class="search-result-name-row">
+                        <span class="search-result-name">${prod.name}</span>
+                        ${refCodeHtml}
+                    </div>
+                    <span class="search-result-collection">${prod.collectionName}</span>
+                    ${priceHtml}
+                </div>
+            `;
+
+            itemDiv.addEventListener('click', () => {
+                closeDrawer();
+                window.openModal(prod.name, prod.desc, prod.img, prod.sizesImg, prod.refcode, prod.sizes);
+                
+                // Clear search input state
+                if (searchInput) searchInput.value = '';
+                if (searchClearBtn) searchClearBtn.style.display = 'none';
+                if (searchResultsWrap) searchResultsWrap.style.display = 'none';
+            });
+
+            searchResultsList.appendChild(itemDiv);
+        });
+
+        if (searchResultsWrap) searchResultsWrap.style.display = 'block';
+    }
+
+    // ─── Drawer Dynamic Category Tree Renderer ───
+    function createDrawerTreeView(nodes) {
+        const ul = document.createElement('ul');
+        ul.className = 'drawer-tree-list';
+
+        nodes.forEach(node => {
+            const isCategory = node.type === 'category';
+            const isExpanded = !!expandedNodes[node.id];
+            const hasChildren = node.children && node.children.length > 0;
+
+            const li = document.createElement('li');
+            li.className = 'drawer-tree-node';
+
+            const header = document.createElement('div');
+            header.className = 'drawer-tree-node-header';
+
+            let toggleSpan = '';
+            if (isCategory) {
+                toggleSpan = `<span class="drawer-tree-toggle">
+                    <i class="fas ${isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} toggle-icon"></i>
+                </span>`;
+            } else {
+                toggleSpan = `<span class="drawer-tree-indent-dot"><i class="far fa-circle"></i></span>`;
+            }
+
+            header.innerHTML = `
+                ${toggleSpan}
+                <i class="fas ${isCategory ? (isExpanded ? 'fa-folder-open' : 'fa-folder') : 'fa-layer-group'} node-icon"></i>
+                <span class="node-name">${node.name}</span>
+            `;
+
+            // Node click handler
+            header.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (isCategory) {
+                    expandedNodes[node.id] = !expandedNodes[node.id];
+                    // Re-render drawer tree
+                    const drawerTreeContainer = document.getElementById('drawer-tree-container');
+                    if (drawerTreeContainer) {
+                        drawerTreeContainer.innerHTML = '';
+                        drawerTreeContainer.appendChild(createDrawerTreeView(treeRoots));
+                    }
+                } else {
+                    closeDrawer();
+                    showProductsView(node.id, node.name);
+                }
+            });
+
+            // Toggle arrow specifically
+            if (isCategory) {
+                const toggle = header.querySelector('.drawer-tree-toggle');
+                toggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    expandedNodes[node.id] = !expandedNodes[node.id];
+                    const drawerTreeContainer = document.getElementById('drawer-tree-container');
+                    if (drawerTreeContainer) {
+                        drawerTreeContainer.innerHTML = '';
+                        drawerTreeContainer.appendChild(createDrawerTreeView(treeRoots));
+                    }
+                });
+            }
+
+            li.appendChild(header);
+
+            if (isCategory && isExpanded && hasChildren) {
+                const subnodesDiv = document.createElement('div');
+                subnodesDiv.className = 'drawer-tree-subnodes';
+                subnodesDiv.appendChild(createDrawerTreeView(node.children));
+                li.appendChild(subnodesDiv);
+            }
+
+            ul.appendChild(li);
+        });
+
+        return ul;
     }
 
     // 6. Modal Logic
