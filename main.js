@@ -147,10 +147,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (key !== cleanKey && rawData.hasOwnProperty(cleanKey)) continue;
             data[cleanKey] = rawData[key];
         }
+        const catName = data.name || data.title || 'Unnamed';
         return {
-            name: data.name || data.title || 'Unnamed',
+            name: catName,
             desc: data.description || data.desc || data.detail || '',
-            img: data.img || data.imageurl || data.imgurl || data.image || data.pic || '',
+            img: (catName === 'Tiles') ? 'tiles_cover.png' : (data.img || data.imageurl || data.imgurl || data.image || data.pic || ''),
             sizesImg: data.sizesimageurl || data.sizeimage || data.sizesimage || data.sizepic || '',
             sizes: data.sizes || data.size || '',
             refcode: data.refcode || data.referencecode || data.code || data.refercode || '',
@@ -181,11 +182,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const cleanKey = key.toLowerCase().replace(/[\s_]+/g, '');
                     cleanData[cleanKey] = raw[key];
                 }
+                const catName = cleanData.name || cleanData.title || 'Unnamed';
                 collectionsData.push({
                     id: doc.id,
-                    name: cleanData.name || cleanData.title || 'Unnamed',
+                    name: catName,
                     desc: cleanData.description || cleanData.desc || cleanData.detail || '',
-                    img: cleanData.img || cleanData.imageurl || cleanData.imgurl || cleanData.image || cleanData.pic || '',
+                    img: (catName === 'Tiles') ? 'tiles_cover.png' : (cleanData.img || cleanData.imageurl || cleanData.imgurl || cleanData.image || cleanData.pic || ''),
                     parentId: cleanData.parentid || '',
                     type: cleanData.type || 'collection',
                     order: cleanData.order !== undefined ? Number(cleanData.order) : 0
@@ -398,7 +400,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const card = document.createElement('div');
                     card.className = `collection-card explorer-card ${isCategory ? 'category-folder-card' : ''}`;
 
-                    const imageStyle = item.img ? `style="background-image: url('${item.img}'); background-size: cover; background-repeat: no-repeat; background-position: center; color: transparent;"` : '';
+                    const imageStyle = item.img ? `style="background-image: url('${item.img}'), linear-gradient(45deg, #e8e4de, #d8d4cc); background-size: contain, cover; background-repeat: no-repeat; background-position: center; color: transparent; padding: 1.5rem; background-origin: content-box, padding-box;"` : '';
 
                     card.innerHTML = `
                         <div class="img-placeholder explorer-card-img" ${imageStyle}>
@@ -520,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const priceHtml = fields.price ? `<p style="color: var(--accent-color); font-weight: bold; margin-bottom: 0;">${fields.price}</p>` : '';
                 const refCodeHtml = fields.refcode ? `<span class="ref-code" style="margin-left:auto;">${fields.refcode}</span>` : '';
 
-                const imageStyle = fields.img ? `style="background-image: url('${fields.img}'); background-size: contain; background-repeat: no-repeat; background-position: center; color: transparent; padding: 1.5rem; background-origin: content-box;"` : '';
+                const imageStyle = fields.img ? `style="background-image: url('${fields.img}'), linear-gradient(45deg, #e8e4de, #d8d4cc); background-size: contain, cover; background-repeat: no-repeat; background-position: center; color: transparent; padding: 1.5rem; background-origin: content-box, padding-box;"` : '';
                 const imageText = fields.img ? '' : 'Product Image';
 
                 card.innerHTML = `
