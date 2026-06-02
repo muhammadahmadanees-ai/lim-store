@@ -183,11 +183,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     cleanData[cleanKey] = raw[key];
                 }
                 const catName = cleanData.name || cleanData.title || 'Unnamed';
+                let imgUrl = cleanData.img || cleanData.imageurl || cleanData.imgurl || cleanData.image || cleanData.pic || '';
+                if (catName === 'Tiles') {
+                    imgUrl = './tiles_cover.png';
+                }
                 collectionsData.push({
                     id: doc.id,
                     name: catName,
                     desc: cleanData.description || cleanData.desc || cleanData.detail || '',
-                    img: cleanData.img || cleanData.imageurl || cleanData.imgurl || cleanData.image || cleanData.pic || '',
+                    img: imgUrl,
                     parentId: cleanData.parentid || '',
                     type: cleanData.type || 'collection',
                     order: cleanData.order !== undefined ? Number(cleanData.order) : 0
