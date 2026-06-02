@@ -400,7 +400,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const card = document.createElement('div');
                     card.className = `collection-card explorer-card ${isCategory ? 'category-folder-card' : ''}`;
 
-                    const imageStyle = item.img ? `style="background-image: url('${item.img}'), linear-gradient(45deg, #e8e4de, #d8d4cc); background-size: contain, cover; background-repeat: no-repeat; background-position: center; color: transparent; padding: 1.5rem; background-origin: content-box, padding-box;"` : '';
+                    const imageStyle = item.img ? `style="background-image: url('${item.img}'), linear-gradient(#ffffff, #ffffff); background-size: contain, cover; background-repeat: no-repeat; background-position: center; color: transparent; padding: 1.5rem; background-origin: content-box, padding-box;"` : '';
 
                     card.innerHTML = `
                         <div class="img-placeholder explorer-card-img" ${imageStyle}>
@@ -522,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const priceHtml = fields.price ? `<p style="color: var(--accent-color); font-weight: bold; margin-bottom: 0;">${fields.price}</p>` : '';
                 const refCodeHtml = fields.refcode ? `<span class="ref-code" style="margin-left:auto;">${fields.refcode}</span>` : '';
 
-                const imageStyle = fields.img ? `style="background-image: url('${fields.img}'), linear-gradient(45deg, #e8e4de, #d8d4cc); background-size: contain, cover; background-repeat: no-repeat; background-position: center; color: transparent; padding: 1.5rem; background-origin: content-box, padding-box;"` : '';
+                const imageStyle = fields.img ? `style="background-image: url('${fields.img}'), linear-gradient(#ffffff, #ffffff); background-size: contain, cover; background-repeat: no-repeat; background-position: center; color: transparent; padding: 1.5rem; background-origin: content-box, padding-box;"` : '';
                 const imageText = fields.img ? '' : 'Product Image';
 
                 card.innerHTML = `
