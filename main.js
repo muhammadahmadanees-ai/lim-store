@@ -31,59 +31,47 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 3. Form Submission to Firebase
+    // 3. Form Submission to Web3Forms
     const form = document.getElementById('inquiry-form');
     if (form) {
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             const btn = form.querySelector('button[type="submit"]');
-            const name    = document.getElementById('name').value;
-            const email   = document.getElementById('email').value;
-            const message = document.getElementById('message').value;
-
             btn.textContent  = 'Sending...';
             btn.style.opacity = '0.8';
 
-            // Send email via Web3Forms
+            const formData = new FormData(form);
+            formData.append("access_key", "2a7f202f-6ff3-4475-b717-9bb6c26e5af1");
+            formData.append("subject", "New General Inquiry - LIM Factory");
+
             fetch('https://api.web3forms.com/submit', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify({
-                    access_key: "2a7f202f-6ff3-4475-b717-9bb6c26e5af1",
-                    subject: "New General Inquiry from LIM Factory",
-                    from_name: "LIM Factory Website",
-                    name: name,
-                    email: email,
-                    message: message
-                })
-            }).catch(e => console.error("Web3Forms error:", e));
-
-            const db = firebase.firestore();
-            db.collection("orders").add({
-                type: 'General Inquiry',
-                name: name,
-                email: email,
-                message: message,
-                status: 'new',
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => {
-                btn.textContent = '\u2705 Inquiry Sent!';
-                btn.style.backgroundColor = '#4caf50';
-                form.reset();
-                setTimeout(() => {
+                body: formData
+            })
+            .then(async (response) => {
+                let json = await response.json();
+                if (response.status == 200) {
+                    btn.textContent = 'Sent Successfully!';
+                    btn.style.backgroundColor = '#4caf50';
+                    btn.style.color = 'white';
+                    form.reset();
+                    setTimeout(() => {
+                        btn.textContent = 'Send Inquiry';
+                        btn.style.backgroundColor = '';
+                        btn.style.color = '';
+                        btn.style.opacity = '1';
+                    }, 3000);
+                } else {
+                    alert(json.message);
                     btn.textContent = 'Send Inquiry';
-                    btn.style.backgroundColor = '';
                     btn.style.opacity = '1';
-                }, 3000);
-            }).catch((error) => {
-                console.error("Error writing document: ", error);
-                btn.textContent = 'Error! Try again.';
-                btn.style.backgroundColor = 'red';
-                setTimeout(() => {
-                    btn.textContent = 'Send Inquiry';
-                    btn.style.backgroundColor = '';
-                    btn.style.opacity = '1';
-                }, 3000);
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                alert("Something went wrong!");
+                btn.textContent = 'Send Inquiry';
+                btn.style.opacity = '1';
             });
         });
     }
@@ -99,17 +87,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const observer = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
                 observer.unobserve(entry.target);
             }
         });
     }, observerOptions);
 
-    document.querySelectorAll('.collection-card, .stat, .fade-in-up').forEach((el, index) => {
-        el.classList.add('fade-in-up');
-        if(el.classList.contains('collection-card')) {
-            el.style.transitionDelay = `${(index % 10) * 0.15}s`;
-        }
+    document.querySelectorAll('.collection-card, .stat, .fade-in-up').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(30px)';
+        el.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
         observer.observe(el);
     });
 
@@ -413,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                content.forEach((item, index) => {
+                content.forEach(item => {
                     const isCategory = item.type === 'category';
                     const card = document.createElement('div');
                     card.className = `collection-card explorer-card ${isCategory ? 'category-folder-card' : ''}`;
@@ -448,8 +436,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     gridContainer.appendChild(card);
 
                     // Animation support
-                    card.classList.add('fade-in-up');
-                    card.style.transitionDelay = `${(index % 10) * 0.15}s`;
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(30px)';
+                    card.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
                     observer.observe(card);
                 });
             }
@@ -531,7 +520,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            let counter = 0;
             querySnapshot.forEach((doc) => {
                 const fields = extractData(doc.data());
                 const card = document.createElement('div');
@@ -555,12 +543,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
                 productsContainer.appendChild(card);
-
-                // Animation support
-                card.classList.add('fade-in-up');
-                card.style.transitionDelay = `${(counter % 10) * 0.15}s`;
-                counter++;
-                observer.observe(card);
 
                 // Click listener to open modal
                 const viewBtn = card.querySelector('.view-details-btn');
@@ -1080,62 +1062,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (form) form.addEventListener('submit', e => {
             e.preventDefault();
-            const data = Object.fromEntries(new FormData(form));
             
             submitBtn.textContent = 'Sending...';
             submitBtn.style.opacity = '0.8';
 
-            // Send email via Web3Forms
-            let sampleMessage = `Collection: ${data.collection}\nTile: ${data.tile}\nQuantity: ${data.quantity}\n\nAddress: ${data.address}\nCity: ${data.city}\nPostcode: ${data.postcode}\nCountry: ${data.country}\n\nNotes: ${data.notes}`;
+            const formData = new FormData(form);
+            formData.append("access_key", "2a7f202f-6ff3-4475-b717-9bb6c26e5af1");
+            formData.append("subject", "New Sample Request - LIM Factory");
+
             fetch('https://api.web3forms.com/submit', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify({
-                    access_key: "2a7f202f-6ff3-4475-b717-9bb6c26e5af1",
-                    subject: "New Sample Request from LIM Factory",
-                    from_name: "LIM Factory Website",
-                    name: data.name,
-                    email: data.email,
-                    phone: data.phone || 'N/A',
-                    message: sampleMessage
-                })
-            }).catch(e => console.error("Web3Forms error:", e));
-
-            const db = firebase.firestore();
-            db.collection("orders").add({
-                type: 'Sample Request',
-                name: data.name,
-                email: data.email,
-                phone: data.phone || '',
-                collection: data.collection || '',
-                tile: data.tile || '',
-                quantity: data.quantity || '',
-                address: data.address || '',
-                city: data.city || '',
-                postcode: data.postcode || '',
-                country: data.country || '',
-                notes: data.notes || '',
-                status: 'new',
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => {
-                submitBtn.textContent = '✅ Request Sent!';
-                submitBtn.style.backgroundColor = '#4caf50';
-                form.reset();
-                setTimeout(() => {
+                body: formData
+            })
+            .then(async (response) => {
+                let json = await response.json();
+                if (response.status == 200) {
+                    submitBtn.textContent = 'Sent Successfully!';
+                    submitBtn.style.backgroundColor = '#4caf50';
+                    submitBtn.style.color = 'white';
+                    form.reset();
+                    setTimeout(() => {
+                        submitBtn.textContent = 'Send Sample Request';
+                        submitBtn.style.backgroundColor = '';
+                        submitBtn.style.color = '';
+                        submitBtn.style.opacity = '1';
+                        modal.classList.remove('show');
+                    }, 2000);
+                } else {
+                    alert(json.message);
                     submitBtn.textContent = 'Send Sample Request';
-                    submitBtn.style.backgroundColor = '';
                     submitBtn.style.opacity = '1';
-                    modal.classList.remove('show');
-                }, 3000);
-            }).catch((error) => {
-                console.error("Error saving sample request: ", error);
-                submitBtn.textContent = 'Error!';
-                submitBtn.style.backgroundColor = 'red';
-                setTimeout(() => {
-                    submitBtn.textContent = 'Send Sample Request';
-                    submitBtn.style.backgroundColor = '';
-                    submitBtn.style.opacity = '1';
-                }, 3000);
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                alert("Something went wrong!");
+                submitBtn.textContent = 'Send Sample Request';
+                submitBtn.style.opacity = '1';
             });
         });
     });
@@ -1565,38 +1528,10 @@ window.addEventListener('DOMContentLoaded', () => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.add('visible');
-                
-                // Add number counter logic
-                const h3 = entry.target.querySelector('h3');
-                if (h3 && !h3.dataset.counted) {
-                    h3.dataset.counted = 'true';
-                    const text = h3.innerText;
-                    const finalNum = parseInt(text.replace(/[^0-9]/g, ''));
-                    const suffix = text.replace(/[0-9]/g, '');
-                    if (!isNaN(finalNum)) {
-                        let current = 0;
-                        const duration = 2000;
-                        const stepTime = Math.abs(Math.floor(duration / finalNum)) || 20;
-                        const increment = Math.max(1, Math.ceil(finalNum / (duration / stepTime)));
-                        const timer = setInterval(() => {
-                            current += increment;
-                            if (current >= finalNum) {
-                                h3.innerText = finalNum + suffix;
-                                clearInterval(timer);
-                            } else {
-                                h3.innerText = current + suffix;
-                            }
-                        }, stepTime);
-                    }
-                }
-
                 statObserver.unobserve(entry.target);
             }
         });
     }, { threshold: 0.4 });
 
-    document.querySelectorAll('.stat').forEach(el => {
-        el.classList.add('fade-in-up');
-        statObserver.observe(el);
-    });
+    document.querySelectorAll('.stat').forEach(el => statObserver.observe(el));
 });
