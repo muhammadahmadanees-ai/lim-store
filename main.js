@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const catName = cleanData.name || cleanData.title || 'Unnamed';
                 let imgUrl = cleanData.img || cleanData.imageurl || cleanData.imgurl || cleanData.image || cleanData.pic || '';
                 if (catName === 'Tiles') {
-                    imgUrl = './tiles_cover.png';
+                    imgUrl = 'https://files.catbox.moe/j6ipn4.png';
                 }
                 collectionsData.push({
                     id: doc.id,
