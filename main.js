@@ -44,6 +44,20 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.textContent  = 'Sending...';
             btn.style.opacity = '0.8';
 
+            // Send email via Web3Forms
+            fetch('https://api.web3forms.com/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({
+                    access_key: "bcbe4cb2-32a7-458d-b370-981c9b304bf1",
+                    subject: "New General Inquiry from LIM Factory",
+                    from_name: "LIM Factory Website",
+                    name: name,
+                    email: email,
+                    message: message
+                })
+            }).catch(e => console.error("Web3Forms error:", e));
+
             const db = firebase.firestore();
             db.collection("orders").add({
                 type: 'General Inquiry',
@@ -85,17 +99,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const observer = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
+                entry.target.classList.add('visible');
                 observer.unobserve(entry.target);
             }
         });
     }, observerOptions);
 
-    document.querySelectorAll('.collection-card, .stat, .fade-in-up').forEach(el => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(30px)';
-        el.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+    document.querySelectorAll('.collection-card, .stat, .fade-in-up').forEach((el, index) => {
+        el.classList.add('fade-in-up');
+        if(el.classList.contains('collection-card')) {
+            el.style.transitionDelay = `${(index % 10) * 0.15}s`;
+        }
         observer.observe(el);
     });
 
@@ -399,7 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                content.forEach(item => {
+                content.forEach((item, index) => {
                     const isCategory = item.type === 'category';
                     const card = document.createElement('div');
                     card.className = `collection-card explorer-card ${isCategory ? 'category-folder-card' : ''}`;
@@ -434,9 +448,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     gridContainer.appendChild(card);
 
                     // Animation support
-                    card.style.opacity = '0';
-                    card.style.transform = 'translateY(30px)';
-                    card.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+                    card.classList.add('fade-in-up');
+                    card.style.transitionDelay = `${(index % 10) * 0.15}s`;
                     observer.observe(card);
                 });
             }
@@ -518,6 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            let counter = 0;
             querySnapshot.forEach((doc) => {
                 const fields = extractData(doc.data());
                 const card = document.createElement('div');
@@ -541,6 +555,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
                 productsContainer.appendChild(card);
+
+                // Animation support
+                card.classList.add('fade-in-up');
+                card.style.transitionDelay = `${(counter % 10) * 0.15}s`;
+                counter++;
+                observer.observe(card);
 
                 // Click listener to open modal
                 const viewBtn = card.querySelector('.view-details-btn');
@@ -1065,6 +1085,22 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.textContent = 'Sending...';
             submitBtn.style.opacity = '0.8';
 
+            // Send email via Web3Forms
+            let sampleMessage = `Collection: ${data.collection}\nTile: ${data.tile}\nQuantity: ${data.quantity}\n\nAddress: ${data.address}\nCity: ${data.city}\nPostcode: ${data.postcode}\nCountry: ${data.country}\n\nNotes: ${data.notes}`;
+            fetch('https://api.web3forms.com/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({
+                    access_key: "bcbe4cb2-32a7-458d-b370-981c9b304bf1",
+                    subject: "New Sample Request from LIM Factory",
+                    from_name: "LIM Factory Website",
+                    name: data.name,
+                    email: data.email,
+                    phone: data.phone || 'N/A',
+                    message: sampleMessage
+                })
+            }).catch(e => console.error("Web3Forms error:", e));
+
             const db = firebase.firestore();
             db.collection("orders").add({
                 type: 'Sample Request',
@@ -1529,10 +1565,38 @@ window.addEventListener('DOMContentLoaded', () => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.add('visible');
+                
+                // Add number counter logic
+                const h3 = entry.target.querySelector('h3');
+                if (h3 && !h3.dataset.counted) {
+                    h3.dataset.counted = 'true';
+                    const text = h3.innerText;
+                    const finalNum = parseInt(text.replace(/[^0-9]/g, ''));
+                    const suffix = text.replace(/[0-9]/g, '');
+                    if (!isNaN(finalNum)) {
+                        let current = 0;
+                        const duration = 2000;
+                        const stepTime = Math.abs(Math.floor(duration / finalNum)) || 20;
+                        const increment = Math.max(1, Math.ceil(finalNum / (duration / stepTime)));
+                        const timer = setInterval(() => {
+                            current += increment;
+                            if (current >= finalNum) {
+                                h3.innerText = finalNum + suffix;
+                                clearInterval(timer);
+                            } else {
+                                h3.innerText = current + suffix;
+                            }
+                        }, stepTime);
+                    }
+                }
+
                 statObserver.unobserve(entry.target);
             }
         });
     }, { threshold: 0.4 });
 
-    document.querySelectorAll('.stat').forEach(el => statObserver.observe(el));
+    document.querySelectorAll('.stat').forEach(el => {
+        el.classList.add('fade-in-up');
+        statObserver.observe(el);
+    });
 });
