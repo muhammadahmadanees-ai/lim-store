@@ -117,6 +117,7 @@ p {
 
 .btn-primary:hover {
     background-color: #ebd076;
+    transform: translateY(-2px);
 }
 
 .btn-outline {
@@ -2106,6 +2107,7 @@ input:focus, textarea:focus, select:focus {
 
 /* 1. Floating Logo */
 .logo {
+    animation: logoFloat 6s ease-in-out infinite;
 }
 
 /* 2. Hero Video Parallax Zoom */
@@ -2132,7 +2134,27 @@ input:focus, textarea:focus, select:focus {
     transform: scale(1.1) !important;
 }
 
-/* 4. Button Shimmer Effect removed */
+/* 4. Button Shimmer Effect */
+.btn-primary {
+    position: relative;
+    overflow: hidden;
+}
+.btn-primary::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+    transform: skewX(-25deg);
+    animation: shimmer 4s infinite;
+}
+@keyframes shimmer {
+    0% { left: -100%; }
+    20% { left: 200%; }
+    100% { left: 200%; }
+}
 
 /* 5. WhatsApp Pulse Animation */
 .whatsapp-sticky-button {
