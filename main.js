@@ -599,9 +599,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
             Promise.all(promises).then(() => {
-                if (allSizes.size > 0) {
-                    const sizesArray = Array.from(allSizes).filter(s => s);
-                    let formattedSizes = sizesArray.map(s => `<strong>${s}</strong>`);
+                const sizesArray = Array.from(allSizes).filter(s => s && s.trim().length > 0);
+                if (sizesArray.length > 0) {
+                    let formattedSizes = sizesArray.map(s => `<strong>${s.replace(/x/gi, '×')} cm</strong>`);
                     let finalString = '';
                     if (formattedSizes.length === 1) finalString = formattedSizes[0];
                     else if (formattedSizes.length === 2) finalString = `${formattedSizes[0]} and ${formattedSizes[1]}`;
