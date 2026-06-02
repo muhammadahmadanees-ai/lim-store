@@ -574,6 +574,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Collections on load
     loadCollections();
 
+    // 6. Dynamic FAQ Sizes
+    const faqSizesAnswer = document.getElementById('faq-sizes-answer');
+    if (faqSizesAnswer) {
+        db.collectionGroup("products").get().then((querySnapshot) => {
+            let allSizes = new Set();
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const sizes = data.sizes || data.size;
+                if (sizes) {
+                    if (typeof sizes === 'string') {
+                        sizes.split(',').forEach(s => allSizes.add(s.trim()));
+                    } else if (Array.isArray(sizes)) {
+                        sizes.forEach(s => allSizes.add(s));
+                    }
+                }
+            });
+            if (allSizes.size > 0) {
+                const sizesArray = Array.from(allSizes).filter(s => s);
+                let formattedSizes = sizesArray.map(s => `<strong>${s}</strong>`);
+                let finalString = '';
+                if (formattedSizes.length === 1) finalString = formattedSizes[0];
+                else if (formattedSizes.length === 2) finalString = `${formattedSizes[0]} and ${formattedSizes[1]}`;
+                else {
+                    const last = formattedSizes.pop();
+                    finalString = `${formattedSizes.join(', ')}, and ${last}`;
+                }
+                faqSizesAnswer.innerHTML = `Our standard tile sizes are ${finalString}. We also offer fully custom sizes for bespoke projects — contact us to discuss your requirements.`;
+            }
+        }).catch(err => console.error("Error fetching dynamic sizes:", err));
+    }
+
     // Handle Back Button
     const backBtn = document.getElementById('back-to-collections');
     if (backBtn) {
