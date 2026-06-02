@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify({
-                    access_key: "bcbe4cb2-32a7-458d-b370-981c9b304bf1",
+                    access_key: "2a7f202f-6ff3-4475-b717-9bb6c26e5af1",
                     subject: "New General Inquiry from LIM Factory",
                     from_name: "LIM Factory Website",
                     name: name,
@@ -1091,7 +1091,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify({
-                    access_key: "bcbe4cb2-32a7-458d-b370-981c9b304bf1",
+                    access_key: "2a7f202f-6ff3-4475-b717-9bb6c26e5af1",
                     subject: "New Sample Request from LIM Factory",
                     from_name: "LIM Factory Website",
                     name: data.name,
