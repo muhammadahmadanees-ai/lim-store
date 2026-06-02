@@ -2061,7 +2061,7 @@ input:focus, textarea:focus, select:focus {
 .whatsapp-sticky-button {
   position: fixed;
   bottom: 20px;
-  left: 20px;
+  right: 20px;
   width: 60px;
   height: 60px;
   background-color: #25d366;
@@ -2092,7 +2092,7 @@ input:focus, textarea:focus, select:focus {
     width: 50px;
     height: 50px;
     bottom: 15px;
-    left: 15px;
+    right: 15px;
   }
   
   .whatsapp-icon {
