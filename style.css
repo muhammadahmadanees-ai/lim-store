@@ -584,26 +584,21 @@ footer {
         display: none; /* In a real app, implement a hamburger menu here */
     }
     
-    .about-container,
-    .contact-container {
+    .about-container {
         grid-template-columns: 1fr;
         flex-direction: column;
-    }
-
-    .contact-container {
         text-align: center;
     }
 
-    .about-container {
+    .contact-container {
+        grid-template-columns: 1fr;
+        flex-direction: column;
         text-align: left;
     }
     
+    .about-container .social-links,
     .contact-container .social-links {
         justify-content: center;
-    }
-
-    .about-container .social-links {
-        justify-content: flex-start;
     }
     
     .footer-content {
