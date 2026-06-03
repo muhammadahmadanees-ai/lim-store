@@ -23,10 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // User is signed in.
             loginContainer.style.display = 'none';
             adminDashboard.style.display = 'block';
-            autoInitializeCategories().then(() => {
-                loadCollections();
-                loadOrders();
-            });
+            loadCollections();
+            loadOrders();
         } else {
             // No user is signed in.
             loginContainer.style.display = 'flex';
@@ -34,90 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    async function autoInitializeCategories() {
-        try {
-            const snapshot = await db.collection("collections").get();
-            const cols = [];
-            snapshot.forEach(d => cols.push({ id: d.id, ...d.data() }));
-
-            let changed = false;
-
-            // Find "Tiles"
-            let tiles = cols.find(c => (c.name === "Tiles" || c.title === "Tiles") && c.type === "category");
-            let tilesId = tiles?.id;
-            if (!tilesId) {
-                console.log("Auto-seeding parent 'Tiles' (old site)");
-                const docRef = await db.collection("collections").add({
-                    name: "Tiles",
-                    description: "Explore our signature custom terrazzo tiles and slabs, crafted to stand the test of time.",
-                    img: "https://res.cloudinary.com/doiujqcpw/image/upload/v1779569126/1_1_dexnnd.jpg",
-                    type: "category",
-                    parentId: "",
-                    order: 0
-                });
-                tilesId = docRef.id;
-                changed = true;
-            }
-
-            // Find "Pressed tiles"
-            let pressed = cols.find(c => c.name === "Pressed tiles" && c.type === "category");
-            let pressedId = pressed?.id;
-            if (!pressedId) {
-                console.log("Auto-seeding subcategory 'Pressed tiles' (old site)");
-                const docRef = await db.collection("collections").add({
-                    name: "Pressed tiles",
-                    description: "Traditionally pressed tiles, highly durable and ideal for floors and high-traffic spaces.",
-                    img: "https://res.cloudinary.com/doiujqcpw/image/upload/v1779569126/1_1_dexnnd.jpg",
-                    type: "category",
-                    parentId: tilesId,
-                    order: 0
-                });
-                pressedId = docRef.id;
-                changed = true;
-            }
-
-            // Find "Non pressed tiles"
-            let nonPressed = cols.find(c => c.name === "Non pressed tiles" && c.type === "category");
-            let nonPressedId = nonPressed?.id;
-            if (!nonPressedId) {
-                console.log("Auto-seeding subcategory 'Non pressed tiles' (old site)");
-                const docRef = await db.collection("collections").add({
-                    name: "Non pressed tiles",
-                    description: "Artisan cast non-pressed slabs and tiles, custom-made for countertops, accent walls, and bespoke features.",
-                    img: "https://res.cloudinary.com/doiujqcpw/image/upload/v1780237546/5_2_ysqf1w.jpg",
-                    type: "category",
-                    parentId: tilesId,
-                    order: 1
-                });
-                nonPressedId = docRef.id;
-                changed = true;
-            }
-
-            // Update Terrazzo Tiles (t9vLeATMRrDsIHekOiSB)
-            const tilesDoc = cols.find(c => c.id === "t9vLeATMRrDsIHekOiSB");
-            if (tilesDoc && (tilesDoc.parentId !== pressedId || tilesDoc.type !== "collection")) {
-                console.log("Auto-seeding: Linking 'Terrazzo Tiles' (old site)");
-                await db.collection("collections").doc("t9vLeATMRrDsIHekOiSB").update({
-                    parentId: pressedId,
-                    type: "collection"
-                });
-                changed = true;
-            }
-
-            // Update Terrazzo Slabs (Z14AdoqWwpAVpMnzZ5dl)
-            const slabsDoc = cols.find(c => c.id === "Z14AdoqWwpAVpMnzZ5dl");
-            if (slabsDoc && (slabsDoc.parentId !== nonPressedId || slabsDoc.type !== "collection")) {
-                console.log("Auto-seeding: Linking 'Terrazzo Slabs' (old site)");
-                await db.collection("collections").doc("Z14AdoqWwpAVpMnzZ5dl").update({
-                    parentId: nonPressedId,
-                    type: "collection"
-                });
-                changed = true;
-            }
-        } catch (e) {
-            console.error("Auto-seeding error in admin.js:", e);
-        }
-    }
 
     loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -234,8 +148,15 @@ document.addEventListener('DOMContentLoaded', () => {
             collectionsList.innerHTML = '';
             if (snapshot.empty) {
                 collectionsList.innerHTML = '<p>No collections found.</p>';
+                const elTot = document.getElementById('dash-tot-collections');
+                if (elTot) elTot.textContent = '0';
                 return;
             }
+            
+            const elTot = document.getElementById('dash-tot-collections');
+            if (elTot) elTot.textContent = allCollectionsList.length;
+            countTotalProducts();
+
             snapshot.forEach((doc) => {
                 const raw = doc.data();
                 const data = extractData(raw);
@@ -289,7 +210,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 collectionsList.innerHTML = '';
-                if (snapshot.empty) { collectionsList.innerHTML = '<p>No collections found.</p>'; return; }
+                if (snapshot.empty) { 
+                    collectionsList.innerHTML = '<p>No collections found.</p>'; 
+                    const elTot = document.getElementById('dash-tot-collections');
+                    if (elTot) elTot.textContent = '0';
+                    return; 
+                }
+                
+                const elTot = document.getElementById('dash-tot-collections');
+                if (elTot) elTot.textContent = allCollectionsList.length;
+                countTotalProducts();
+
                 const docs = [];
                 snapshot.forEach(doc => docs.push(doc));
                 docs.sort((a, b) => (a.data().order || 0) - (b.data().order || 0));
@@ -567,12 +498,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // ─── ORDERS CRUD ────────────────────────────────────────
 
     const ordersList = document.getElementById('admin-orders-list');
+    let allOrdersList = [];
 
     function loadOrders() {
         ordersList.innerHTML = '<tr><td colspan="7">Loading orders...</td></tr>';
         
         db.collection("orders").orderBy("createdAt", "desc").onSnapshot((snapshot) => {
             ordersList.innerHTML = '';
+            allOrdersList = [];
             if (snapshot.empty) {
                 ordersList.innerHTML = '<tr><td colspan="7">No orders or inquiries found.</td></tr>';
                 return;
@@ -580,6 +513,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             snapshot.forEach((doc) => {
                 const data = doc.data();
+                allOrdersList.push({ id: doc.id, ...data });
                 const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleString() : 'N/A';
                 
                 let detailsStr = '';
@@ -601,16 +535,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td style="font-size:0.85rem;">${detailsStr}</td>
                     <td><span class="status-badge ${statusClass}">${status.toUpperCase()}</span></td>
                     <td>
-                        <select onchange="updateOrderStatus('${doc.id}', this.value)" style="padding: 5px; border-radius: 4px;">
+                        <select onchange="updateOrderStatus('${doc.id}', this.value)" style="padding: 5px; border-radius: 4px; margin-bottom: 5px; display: block; width: 100%;">
                             <option value="new" ${status === 'new' ? 'selected' : ''}>New</option>
                             <option value="contacted" ${status === 'contacted' ? 'selected' : ''}>Contacted</option>
                             <option value="closed" ${status === 'closed' ? 'selected' : ''}>Closed</option>
                         </select>
-                        <button class="admin-btn admin-btn-delete" style="display:inline-block; margin-left: 10px; width: auto;" onclick="deleteOrder('${doc.id}')"><i class="fas fa-trash"></i></button>
+                        <button class="admin-btn admin-btn-view" style="width: auto; padding: 5px 10px; font-size: 0.8rem;" onclick="openReplyModal('${doc.id}', '${(data.name || '').replace(/'/g, "\\'")}', '${(data.email || '').replace(/'/g, "\\'")}', '${(data.phone || '').replace(/'/g, "\\'")}', '${detailsStr.replace(/'/g, "\\'").replace(/\n/g, "<br>")}')"><i class="fas fa-reply"></i> Reply</button>
+                        <button class="admin-btn admin-btn-delete" style="width: auto; padding: 5px 10px; font-size: 0.8rem;" onclick="deleteOrder('${doc.id}')"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
                 ordersList.appendChild(tr);
             });
+            updateDashboardStats();
         }, (error) => {
             ordersList.innerHTML = `<tr><td colspan="7" style="color:red;">Error loading orders: ${error.message}</td></tr>`;
         });
@@ -628,11 +564,196 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- EXPORT ORDERS ---
+    const exportCsvBtn = document.getElementById('export-csv-btn');
+    if (exportCsvBtn) {
+        exportCsvBtn.addEventListener('click', () => {
+            if (allOrdersList.length === 0) return alert("No orders to export.");
+            
+            let csvContent = "Date,Name,Email,Phone,Type,Details,Status\n";
+            allOrdersList.forEach(data => {
+                const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleString() : 'N/A';
+                const name = `"${(data.name || '').replace(/"/g, '""')}"`;
+                const email = `"${(data.email || '').replace(/"/g, '""')}"`;
+                const phone = `"${(data.phone || '').replace(/"/g, '""')}"`;
+                const type = `"${(data.type || '').replace(/"/g, '""')}"`;
+                
+                let detailsStr = '';
+                if (data.type === 'Sample Request') {
+                    detailsStr = `Collection: ${data.collection || ''} | Tile: ${data.tile || ''} | Qty: ${data.quantity || ''} | Address: ${data.address || ''}, ${data.city || ''}`;
+                } else if (data.type === 'General Inquiry') {
+                    detailsStr = data.message || '';
+                }
+                const details = `"${detailsStr.replace(/"/g, '""')}"`;
+                const status = `"${(data.status || 'new').toUpperCase()}"`;
+
+                csvContent += `${date},${name},${email},${phone},${type},${details},${status}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "lim_factory_orders.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    }
+
+    const exportPdfBtn = document.getElementById('export-pdf-btn');
+    if (exportPdfBtn) {
+        exportPdfBtn.addEventListener('click', () => {
+            if (allOrdersList.length === 0) return alert("No orders to export.");
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('landscape');
+            
+            // Add Branding
+            doc.setFontSize(22);
+            doc.text("LIM Factory", 14, 20);
+            doc.setFontSize(12);
+            doc.text("Orders & Inquiries Report", 14, 30);
+            doc.setFontSize(10);
+            doc.text("Generated on: " + new Date().toLocaleString(), 14, 38);
+
+            const tableColumn = ["Date", "Name", "Email", "Phone", "Type", "Details", "Status"];
+            const tableRows = [];
+
+            allOrdersList.forEach(data => {
+                const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleString() : 'N/A';
+                const name = data.name || '';
+                const email = data.email || '';
+                const phone = data.phone || '';
+                const type = data.type || '';
+                
+                let detailsStr = '';
+                if (data.type === 'Sample Request') {
+                    detailsStr = `Col: ${data.collection || ''}\nTile: ${data.tile || ''}\nQty: ${data.quantity || ''}\nAddr: ${data.address || ''}, ${data.city || ''}`;
+                } else if (data.type === 'General Inquiry') {
+                    detailsStr = data.message ? (data.message.length > 100 ? data.message.substring(0, 100) + '...' : data.message) : '';
+                }
+                const status = (data.status || 'new').toUpperCase();
+
+                tableRows.push([date, name, email, phone, type, detailsStr, status]);
+            });
+
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: 45,
+                styles: { fontSize: 8, cellPadding: 3 },
+                headStyles: { fillColor: [163, 26, 30] }, // LIM Red
+                columnStyles: {
+                    5: { cellWidth: 80 } // Give more width to details
+                }
+            });
+
+            doc.save("lim_factory_orders.pdf");
+        });
+    }
+
     // Close modals on outside click
     window.addEventListener('click', (e) => {
         if (e.target === colModal) colModal.classList.remove('show');
         if (e.target === prodModal) prodModal.classList.remove('show');
+        if (typeof replyModal !== 'undefined' && e.target === replyModal) replyModal.classList.remove('show');
     });
+
+    // --- REPLY MODAL LOGIC ---
+    const replyModal = document.getElementById('reply-modal');
+    const closeReplyModal = document.getElementById('close-reply-modal');
+    const btnSendEmail = document.getElementById('btn-send-email');
+    const btnSendWhatsapp = document.getElementById('btn-send-whatsapp');
+    const replyStatusMsg = document.getElementById('reply-status-msg');
+
+    if (replyModal) {
+        window.openReplyModal = function(orderId, name, email, phone, message) {
+            document.getElementById('reply-order-id').value = orderId;
+            document.getElementById('reply-customer-name').textContent = name || 'Unknown';
+            document.getElementById('reply-customer-email').textContent = email || 'N/A';
+            document.getElementById('reply-email-address').value = email || '';
+            document.getElementById('reply-customer-phone').textContent = phone || 'N/A';
+            document.getElementById('reply-phone-number').value = phone || '';
+            document.getElementById('reply-customer-message').innerHTML = message || 'No details provided.';
+            
+            document.getElementById('reply-message').value = '';
+            replyStatusMsg.textContent = '';
+            
+            replyModal.classList.add('show');
+        };
+
+        closeReplyModal.addEventListener('click', () => {
+            replyModal.classList.remove('show');
+        });
+
+        btnSendWhatsapp.addEventListener('click', () => {
+            const phone = document.getElementById('reply-phone-number').value.replace(/[^0-9+]/g, '');
+            const message = document.getElementById('reply-message').value;
+            if (!phone) {
+                alert("No phone number available for this customer.");
+                return;
+            }
+            if (!message) {
+                alert("Please type a message first.");
+                return;
+            }
+            
+            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+            
+            const orderId = document.getElementById('reply-order-id').value;
+            if (orderId) updateOrderStatus(orderId, 'contacted');
+        });
+
+        btnSendEmail.addEventListener('click', () => {
+            const email = document.getElementById('reply-email-address').value;
+            const message = document.getElementById('reply-message').value;
+            const name = document.getElementById('reply-customer-name').textContent;
+            
+            if (!email || email === 'N/A') {
+                alert("No email address available for this customer.");
+                return;
+            }
+            if (!message) {
+                alert("Please type a message first.");
+                return;
+            }
+
+            btnSendEmail.disabled = true;
+            btnSendEmail.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+            replyStatusMsg.textContent = 'Sending email...';
+            replyStatusMsg.style.color = '#555';
+
+            const templateParams = {
+                to_name: name,
+                to_email: email,
+                reply_message: message
+            };
+
+            // Using actual credentials provided by the user
+            emailjs.send('service_bwb75tb', 'template_046burx', templateParams)
+                .then(function(response) {
+                    console.log('SUCCESS!', response.status, response.text);
+                    replyStatusMsg.textContent = 'Email sent successfully!';
+                    replyStatusMsg.style.color = 'green';
+                    
+                    const orderId = document.getElementById('reply-order-id').value;
+                    if (orderId) updateOrderStatus(orderId, 'contacted');
+                    
+                    setTimeout(() => {
+                        replyModal.classList.remove('show');
+                        btnSendEmail.disabled = false;
+                        btnSendEmail.innerHTML = '<i class="fas fa-envelope"></i> Send Email';
+                    }, 2000);
+                }, function(error) {
+                    console.log('FAILED...', error);
+                    replyStatusMsg.textContent = 'Failed to send email. Check your EmailJS setup.';
+                    replyStatusMsg.style.color = 'red';
+                    btnSendEmail.disabled = false;
+                    btnSendEmail.innerHTML = '<i class="fas fa-envelope"></i> Send Email';
+                });
+        });
+    }
 
     Sortable.create(document.getElementById('admin-collections-list'), {
         animation: 150,
@@ -666,8 +787,6 @@ document.addEventListener('DOMContentLoaded', () => {
             batch.commit().then(() => console.log('Products reordered')).catch(e => console.error(e));
         }
     });
-
-});
     // --- DRAG AND DROP REORDERING --------------------------------
     window.setupDragAndDrop = function(containerId, onReorderCallback) {
         const container = document.getElementById(containerId);
@@ -714,3 +833,129 @@ document.addEventListener('DOMContentLoaded', () => {
         }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
+    // --- DASHBOARD LOGIC ---
+    function countTotalProducts() {
+        if (!allCollectionsList || allCollectionsList.length === 0) {
+            const el = document.getElementById('dash-tot-products');
+            if (el) el.textContent = '0';
+            return;
+        }
+        
+        let total = 0;
+        let processed = 0;
+        
+        allCollectionsList.forEach(col => {
+            if (col.type === 'category') {
+                processed++;
+                if (processed === allCollectionsList.length) {
+                    const el = document.getElementById('dash-tot-products');
+                    if (el) el.textContent = total;
+                }
+                return;
+            }
+
+            db.collection("collections").doc(col.id).collection("products").get()
+                .then(snap => {
+                    total += snap.size;
+                })
+                .catch(err => console.warn(err))
+                .finally(() => {
+                    processed++;
+                    if (processed === allCollectionsList.length) {
+                        const el = document.getElementById('dash-tot-products');
+                        if (el) el.textContent = total;
+                    }
+                });
+        });
+    }
+
+    let dashboardChart = null;
+
+    function updateDashboardStats() {
+        const now = new Date();
+        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        let weekCount = 0;
+        let statusCounts = { new: 0, contacted: 0, closed: 0 };
+        let mostRecentStr = "None yet.";
+
+        if (allOrdersList.length > 0) {
+            const recent = allOrdersList[0];
+            const typeStr = recent.type || 'Inquiry';
+            const nameStr = recent.name || 'Unknown';
+            const dateStr = recent.createdAt ? new Date(recent.createdAt.seconds * 1000).toLocaleDateString() : '';
+            mostRecentStr = `${nameStr} - ${typeStr} <span style="color:#888;font-size:0.9rem">(${dateStr})</span>`;
+        }
+
+        allOrdersList.forEach(order => {
+            if (order.createdAt) {
+                const d = new Date(order.createdAt.seconds * 1000);
+                if (d > oneWeekAgo) weekCount++;
+            }
+            const s = (order.status || 'new').toLowerCase();
+            if (statusCounts[s] !== undefined) statusCounts[s]++;
+        });
+
+        const elWeek = document.getElementById('dash-orders-week');
+        if(elWeek) elWeek.textContent = weekCount;
+        
+        const elStatus = document.getElementById('dash-orders-status');
+        if(elStatus) elStatus.innerHTML = `New: ${statusCounts.new}<br>Contacted: ${statusCounts.contacted}<br>Closed: ${statusCounts.closed}`;
+        
+        const elRecent = document.getElementById('dash-recent-order');
+        if(elRecent) elRecent.innerHTML = mostRecentStr;
+
+        renderChart();
+    }
+
+    function renderChart() {
+        const ctx = document.getElementById('ordersChart');
+        if (!ctx) return;
+        
+        const now = new Date();
+        const weeks = [0, 0, 0, 0];
+        const labels = [];
+        
+        for (let i = 3; i >= 0; i--) {
+            const d = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+            labels.push(d.toLocaleDateString(undefined, {month:'short', day:'numeric'}));
+        }
+
+        allOrdersList.forEach(order => {
+            if (order.createdAt) {
+                const d = new Date(order.createdAt.seconds * 1000);
+                const diffDays = Math.floor((now.getTime() - d.getTime()) / (1000 * 3600 * 24));
+                if (diffDays >= 0 && diffDays < 7) weeks[3]++;
+                else if (diffDays >= 7 && diffDays < 14) weeks[2]++;
+                else if (diffDays >= 14 && diffDays < 21) weeks[1]++;
+                else if (diffDays >= 21 && diffDays < 28) weeks[0]++;
+            }
+        });
+
+        if (dashboardChart) {
+            dashboardChart.data.datasets[0].data = weeks;
+            dashboardChart.data.labels = labels;
+            dashboardChart.update();
+        } else {
+            if (typeof Chart !== 'undefined') {
+                dashboardChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Inquiries (Last 4 Weeks)',
+                            data: weeks,
+                            backgroundColor: 'rgba(163, 26, 30, 0.7)',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                    }
+                });
+            }
+        }
+    }
+
+});

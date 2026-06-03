@@ -593,7 +593,15 @@ footer {
     .contact-container {
         grid-template-columns: 1fr;
         flex-direction: column;
-        text-align: left;
+        text-align: left !important;
+    }
+    
+    .contact-container .contact-info, 
+    .contact-container .contact-form,
+    .contact-container h2,
+    .contact-container .contact-details li,
+    .contact-container .form-group label {
+        text-align: left !important;
     }
     
     .about-container .social-links,

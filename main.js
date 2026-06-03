@@ -161,6 +161,11 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    function toSlug(str) {
+        if (!str) return '';
+        return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+
     let collectionsData = [];
     let treeRoots = [];
     let activeNode = null;
@@ -196,7 +201,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     img: imgUrl,
                     parentId: cleanData.parentid || '',
                     type: cleanData.type || 'collection',
-                    order: cleanData.order !== undefined ? Number(cleanData.order) : 0
+                    order: cleanData.order !== undefined ? Number(cleanData.order) : 0,
+                    slug: toSlug(catName)
                 });
             });
 
@@ -247,6 +253,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                             <div id="tree-nodes-list-container"></div>
                         </div>
+
+                        <!-- Desktop Recently Viewed -->
+                        <div id="desktop-recently-viewed-section" style="display: none; margin-top: 25px; padding-top: 20px; border-top: 1px solid #eaeaea;">
+                            <h4 class="sidebar-title" style="margin-bottom: 12px;">Recently Viewed</h4>
+                            <div class="pm-recently-viewed-strip" id="desktop-recently-viewed-strip">
+                                <!-- Thumbnails populated here -->
+                            </div>
+                        </div>
                     </aside>
                     <!-- Right Pane -->
                     <main class="explorer-main">
@@ -264,6 +278,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Render
             renderExplorer();
+            if (typeof renderRecentlyViewed === 'function') renderRecentlyViewed();
+            
+            // Initial Route evaluation
+            handleRoute();
 
         }).catch((error) => {
             console.error("Error fetching collections from Firebase:", error);
@@ -276,15 +294,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const roots = [];
 
         items.forEach(item => {
-            itemMap[item.id] = { ...item, children: [] };
+            item.children = [];
+            itemMap[item.id] = item;
         });
 
         items.forEach(item => {
-            const mapped = itemMap[item.id];
-            if (mapped.parentId && itemMap[mapped.parentId]) {
-                itemMap[mapped.parentId].children.push(mapped);
+            if (item.parentId && itemMap[item.parentId]) {
+                itemMap[item.parentId].children.push(item);
             } else {
-                roots.push(mapped);
+                roots.push(item);
             }
         });
 
@@ -300,7 +318,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return roots;
     }
 
+    let isRouting = false;
+
     function selectCategoryNode(node) {
+        if (!isRouting) {
+            if (node === null) {
+                window.location.hash = '#/collections';
+            } else {
+                window.location.hash = '#/collections/' + node.slug;
+            }
+            return;
+        }
+
         if (node === null) {
             activeNode = null;
         } else if (node.type === 'collection') {
@@ -311,6 +340,60 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         renderExplorer();
     }
+    
+    function handleRoute() {
+        const hash = window.location.hash;
+        isRouting = true;
+        
+        if (hash.startsWith('#/product/')) {
+            const productSlug = hash.replace('#/product/', '');
+            indexAllProducts().then(products => {
+                const product = products.find(p => p.slug === productSlug);
+                if (product) {
+                    window.openModal(product.name, product.desc, product.img, product.sizesImg, product.refcode, product.sizes);
+                }
+            });
+        } else if (hash.startsWith('#/collections/')) {
+            const slug = hash.replace('#/collections/', '');
+            const node = collectionsData.find(c => c.slug === slug);
+            if (node) {
+                // Expand parent nodes
+                let parent = collectionsData.find(c => c.id === node.parentId);
+                while (parent) {
+                    expandedNodes[parent.id] = true;
+                    parent = collectionsData.find(c => c.id === parent.parentId);
+                }
+                
+                if (node.type === 'collection') {
+                    showCollectionsView();
+                    showProductsView(node.id, node.name);
+                    activeNode = collectionsData.find(c => c.id === node.parentId) || null;
+                    renderExplorer();
+                } else {
+                    showCollectionsView();
+                    activeNode = node;
+                    renderExplorer();
+                }
+            } else {
+                showCollectionsView();
+                activeNode = null;
+                renderExplorer();
+            }
+        } else if (hash === '#/collections') {
+            showCollectionsView();
+            activeNode = null;
+            renderExplorer();
+        } else if (hash === '' || hash === '#') {
+            // Revert to home view
+            productsView.style.display = 'none';
+            collectionsView.style.display = 'block';
+            heroView.style.display = 'flex';
+        }
+        
+        isRouting = false;
+    }
+
+    window.addEventListener('hashchange', handleRoute);
 
     function renderExplorer() {
         // Active state of All Collections root header
@@ -676,19 +759,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // ─── Search Indexing ───
     let allProductsIndex = [];
     let isIndexed = false;
+    let indexPromise = null;
 
     function indexAllProducts() {
-        if (isIndexed) return;
+        if (isIndexed) return Promise.resolve(allProductsIndex);
+        if (indexPromise) return indexPromise;
         
+        const promises = [];
         collectionsData.forEach(col => {
             if (col.type === 'category') return; // Folders don't have products directly
-            db.collection("collections").doc(col.id).collection("products").orderBy("order").get().then((pSnapshot) => {
+            const p = db.collection("collections").doc(col.id).collection("products").orderBy("order").get().then((pSnapshot) => {
                 pSnapshot.forEach(pDoc => {
                     const raw = pDoc.data();
                     const pFields = extractData(raw);
                     allProductsIndex.push({
                         id: pDoc.id,
                         name: pFields.name,
+                        slug: toSlug(pFields.name),
                         desc: pFields.desc,
                         img: pFields.img,
                         price: pFields.price,
@@ -700,9 +787,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 });
             }).catch(err => console.warn(`Error indexing products for ${col.name}:`, err));
+            promises.push(p);
         });
         
-        isIndexed = true;
+        indexPromise = Promise.all(promises).then(() => {
+            isIndexed = true;
+            return allProductsIndex;
+        });
+        return indexPromise;
     }
 
     // ─── Live Search Filter ───
@@ -875,6 +967,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Make openModal available globally or within the closure
     window.openModal = function (title, desc, img, sizesImg, refcode, sizes) {
+        if (!isRouting) {
+            window.location.hash = '#/product/' + toSlug(title);
+        }
         document.getElementById('modal-title').textContent = title;
         const refCodeEl = document.getElementById('modal-ref-code');
         if (refcode) {
@@ -936,19 +1031,63 @@ document.addEventListener('DOMContentLoaded', () => {
             sizesContainer.style.display = 'none';
         }
 
+        // Shareable Icons URLs
+        const currentUrl = window.location.href.split('#')[0] + '#/product/' + toSlug(title);
+        
+        const waIcon = document.querySelector('.pm-social-icon.whatsapp');
+        if (waIcon) {
+            waIcon.href = `https://wa.me/923164934687?text=Hello! I'm interested in the ${encodeURIComponent(title)} tile. Check it out here: ${encodeURIComponent(currentUrl)}`;
+        }
+        
+        const emailIcon = document.querySelector('.pm-social-icon.email');
+        if (emailIcon) {
+            emailIcon.href = `mailto:limfactoryy@gmail.com?subject=Inquiry: ${encodeURIComponent(title)}&body=Hello LIM Factory Team,%0A%0AI'm interested in the ${encodeURIComponent(title)} tile.%0AYou can see the product here: ${encodeURIComponent(currentUrl)}%0A%0AThanks!`;
+        }
+
+        // Update Recently Viewed History
+        let history = [];
+        try {
+            const stored = localStorage.getItem('lim_recently_viewed');
+            if (stored) history = JSON.parse(stored);
+        } catch (e) { console.error("Error reading localStorage", e); }
+        
+        history = history.filter(item => item.title !== title);
+        history.unshift({ title, desc, img, sizesImg, refcode, sizes });
+        history = history.slice(0, 5); // Keep up to 5 items
+        
+        try {
+            localStorage.setItem('lim_recently_viewed', JSON.stringify(history));
+        } catch (e) { console.error("Error writing localStorage", e); }
+
+        if (typeof renderRecentlyViewed === 'function') {
+            renderRecentlyViewed();
+        }
+
         modal.classList.add('show');
+    }
+
+    function revertHash() {
+        if (activeNode) {
+            window.location.hash = '#/collections/' + activeNode.slug;
+        } else {
+            window.location.hash = '#/collections';
+        }
     }
 
     if (closeBtn) {
         closeBtn.onclick = function () {
             modal.classList.remove('show');
+            if (!isRouting) revertHash();
         }
     }
 
     // Close any modal when clicking the backdrop
     window.addEventListener('click', function (event) {
         // product modal backdrop
-        if (event.target === modal) modal.classList.remove('show');
+        if (event.target === modal) {
+            modal.classList.remove('show');
+            if (!isRouting) revertHash();
+        }
         // order modal backdrop
         const orderModal = document.getElementById('order-modal');
         if (event.target === orderModal) orderModal.classList.remove('show');
@@ -997,6 +1136,71 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Render Recently Viewed Items Globally
+    window.renderRecentlyViewed = function() {
+        let history = [];
+        try {
+            const stored = localStorage.getItem('lim_recently_viewed');
+            if (stored) history = JSON.parse(stored);
+        } catch (e) { console.error("Error reading localStorage", e); }
+
+        const toRender = history.slice(0, 5);
+
+        const desktopContainer = document.getElementById('desktop-recently-viewed-section');
+        const desktopStrip = document.getElementById('desktop-recently-viewed-strip');
+        const mobileContainer = document.getElementById('mobile-recently-viewed-section');
+        const mobileStrip = document.getElementById('mobile-recently-viewed-strip');
+        const modalContainer = document.getElementById('pm-recently-viewed-section');
+        const modalStrip = document.getElementById('pm-recently-viewed-strip');
+
+        const populateStrip = (container, strip, filterCurrentModalTitle = null) => {
+            if (!container || !strip) return;
+            
+            let finalRender = toRender;
+            if (filterCurrentModalTitle) {
+                finalRender = history.filter(item => item.title !== filterCurrentModalTitle).slice(0, 5);
+            }
+
+            if (finalRender.length > 0) {
+                container.style.display = 'block';
+                strip.innerHTML = '';
+                finalRender.forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = 'pm-recently-viewed-item';
+                    
+                    let imgHtml = '';
+                    if (item.img) {
+                        imgHtml = `<img src="${item.img}" class="pm-recently-viewed-thumb" alt="${item.title}">`;
+                    } else {
+                        imgHtml = `<div class="pm-recently-viewed-thumb" style="background:#eee; display:flex; align-items:center; justify-content:center; font-size:10px; color:#aaa;">No Img</div>`;
+                    }
+                    
+                    el.innerHTML = `
+                        ${imgHtml}
+                        <div class="pm-recently-viewed-name" title="${item.title}">${item.title}</div>
+                    `;
+                    el.addEventListener('click', () => {
+                        // Close drawer if open (for mobile)
+                        if (typeof closeDrawer === 'function') closeDrawer();
+                        window.openModal(item.title, item.desc, item.img, item.sizesImg, item.refcode, item.sizes);
+                    });
+                    strip.appendChild(el);
+                });
+            } else {
+                container.style.display = 'none';
+            }
+        };
+
+        populateStrip(desktopContainer, desktopStrip);
+        populateStrip(mobileContainer, mobileStrip);
+        
+        // For the modal strip, we filter out the title of the currently open modal
+        const currentModalTitle = document.getElementById('modal-title') ? document.getElementById('modal-title').textContent : null;
+        populateStrip(modalContainer, modalStrip, currentModalTitle);
+    };
+
+    // Initial render on load
+    renderRecentlyViewed();
 
 });
 
