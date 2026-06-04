@@ -499,58 +499,147 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const ordersList = document.getElementById('admin-orders-list');
     let allOrdersList = [];
+    let filteredOrdersList = [];
+
+    function renderOrders(ordersToRender) {
+        ordersList.innerHTML = '';
+        if (ordersToRender.length === 0) {
+            ordersList.innerHTML = '<tr><td colspan="7">No orders or inquiries found.</td></tr>';
+            return;
+        }
+
+        ordersToRender.forEach((data) => {
+            const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleString() : 'N/A';
+            
+            let detailsStr = '';
+            if (data.type === 'Sample Request') {
+                detailsStr = `Collection: ${data.collection}<br>Tile: ${data.tile}<br>Qty: ${data.quantity}<br>Address: ${data.address}, ${data.city}`;
+            } else if (data.type === 'General Inquiry') {
+                detailsStr = data.message ? (data.message.length > 50 ? data.message.substring(0, 50) + '...' : data.message) : '';
+            }
+
+            const status = data.status || 'new';
+            const statusClass = `status-${status.toLowerCase()}`;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${date}</td>
+                <td><strong>${data.name || 'Unknown'}</strong></td>
+                <td>${data.email || 'N/A'}<br>${data.phone || ''}</td>
+                <td>${data.type || 'Inquiry'}</td>
+                <td style="font-size:0.85rem;">${detailsStr}</td>
+                <td><span class="status-badge ${statusClass}">${status.toUpperCase()}</span></td>
+                <td>
+                    <select onchange="updateOrderStatus('${data.id}', this.value)" style="padding: 5px; border-radius: 4px; margin-bottom: 5px; display: block; width: 100%;">
+                        <option value="new" ${status === 'new' ? 'selected' : ''}>New</option>
+                        <option value="contacted" ${status === 'contacted' ? 'selected' : ''}>Contacted</option>
+                        <option value="closed" ${status === 'closed' ? 'selected' : ''}>Closed</option>
+                    </select>
+                    <button class="admin-btn admin-btn-view" style="width: auto; padding: 5px 10px; font-size: 0.8rem;" onclick="openReplyModal('${data.id}', '${(data.name || '').replace(/'/g, "\\'")}', '${(data.email || '').replace(/'/g, "\\'")}', '${(data.phone || '').replace(/'/g, "\\'")}', '${detailsStr.replace(/'/g, "\\'").replace(/\n/g, "<br>")}')"><i class="fas fa-reply"></i> Reply</button>
+                    <button class="admin-btn admin-btn-delete" style="width: auto; padding: 5px 10px; font-size: 0.8rem;" onclick="deleteOrder('${data.id}')"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            ordersList.appendChild(tr);
+        });
+    }
+
+    function applyOrderFilters() {
+        const searchInput = document.getElementById('order-search-input');
+        const statusFilter = document.getElementById('order-status-filter');
+        const dateFromInput = document.getElementById('order-date-from');
+        const dateToInput = document.getElementById('order-date-to');
+        
+        let searchTerm = '';
+        let statusVal = 'All';
+        let dateFrom = null;
+        let dateTo = null;
+        
+        if (searchInput) searchTerm = searchInput.value.toLowerCase();
+        if (statusFilter) statusVal = statusFilter.value;
+        if (dateFromInput && dateFromInput.value) dateFrom = new Date(dateFromInput.value + 'T00:00:00');
+        if (dateToInput && dateToInput.value) dateTo = new Date(dateToInput.value + 'T23:59:59');
+        
+        filteredOrdersList = allOrdersList.filter(order => {
+            const nameMatch = (order.name || '').toLowerCase().includes(searchTerm);
+            const emailMatch = (order.email || '').toLowerCase().includes(searchTerm);
+            const typeMatch = (order.type || '').toLowerCase().includes(searchTerm);
+            const matchesSearch = nameMatch || emailMatch || typeMatch;
+            
+            const matchesStatus = (statusVal === 'All') || ((order.status || 'new').toLowerCase() === statusVal.toLowerCase());
+            
+            let matchesDate = true;
+            if (dateFrom || dateTo) {
+                if (!order.createdAt) matchesDate = false;
+                else {
+                    const orderDate = new Date(order.createdAt.seconds * 1000);
+                    if (dateFrom && orderDate < dateFrom) matchesDate = false;
+                    if (dateTo && orderDate > dateTo) matchesDate = false;
+                }
+            }
+            
+            return matchesSearch && matchesStatus && matchesDate;
+        });
+        
+        renderOrders(filteredOrdersList);
+    }
 
     function loadOrders() {
         ordersList.innerHTML = '<tr><td colspan="7">Loading orders...</td></tr>';
         
         db.collection("orders").orderBy("createdAt", "desc").onSnapshot((snapshot) => {
-            ordersList.innerHTML = '';
             allOrdersList = [];
             if (snapshot.empty) {
-                ordersList.innerHTML = '<tr><td colspan="7">No orders or inquiries found.</td></tr>';
+                renderOrders([]);
+                if (typeof updateDashboardStats === 'function') updateDashboardStats();
                 return;
             }
 
             snapshot.forEach((doc) => {
                 const data = doc.data();
                 allOrdersList.push({ id: doc.id, ...data });
-                const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleString() : 'N/A';
-                
-                let detailsStr = '';
-                if (data.type === 'Sample Request') {
-                    detailsStr = `Collection: ${data.collection}<br>Tile: ${data.tile}<br>Qty: ${data.quantity}<br>Address: ${data.address}, ${data.city}`;
-                } else if (data.type === 'General Inquiry') {
-                    detailsStr = data.message ? (data.message.length > 50 ? data.message.substring(0, 50) + '...' : data.message) : '';
-                }
-
-                const status = data.status || 'new';
-                const statusClass = `status-${status.toLowerCase()}`;
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${date}</td>
-                    <td><strong>${data.name || 'Unknown'}</strong></td>
-                    <td>${data.email || 'N/A'}<br>${data.phone || ''}</td>
-                    <td>${data.type || 'Inquiry'}</td>
-                    <td style="font-size:0.85rem;">${detailsStr}</td>
-                    <td><span class="status-badge ${statusClass}">${status.toUpperCase()}</span></td>
-                    <td>
-                        <select onchange="updateOrderStatus('${doc.id}', this.value)" style="padding: 5px; border-radius: 4px; margin-bottom: 5px; display: block; width: 100%;">
-                            <option value="new" ${status === 'new' ? 'selected' : ''}>New</option>
-                            <option value="contacted" ${status === 'contacted' ? 'selected' : ''}>Contacted</option>
-                            <option value="closed" ${status === 'closed' ? 'selected' : ''}>Closed</option>
-                        </select>
-                        <button class="admin-btn admin-btn-view" style="width: auto; padding: 5px 10px; font-size: 0.8rem;" onclick="openReplyModal('${doc.id}', '${(data.name || '').replace(/'/g, "\\'")}', '${(data.email || '').replace(/'/g, "\\'")}', '${(data.phone || '').replace(/'/g, "\\'")}', '${detailsStr.replace(/'/g, "\\'").replace(/\n/g, "<br>")}')"><i class="fas fa-reply"></i> Reply</button>
-                        <button class="admin-btn admin-btn-delete" style="width: auto; padding: 5px 10px; font-size: 0.8rem;" onclick="deleteOrder('${doc.id}')"><i class="fas fa-trash"></i></button>
-                    </td>
-                `;
-                ordersList.appendChild(tr);
             });
-            updateDashboardStats();
+            
+            applyOrderFilters();
+            if (typeof updateDashboardStats === 'function') updateDashboardStats();
         }, (error) => {
             ordersList.innerHTML = `<tr><td colspan="7" style="color:red;">Error loading orders: ${error.message}</td></tr>`;
         });
     }
+
+    const orderSearchInput = document.getElementById('order-search-input');
+    const orderStatusFilter = document.getElementById('order-status-filter');
+    const orderDateFrom = document.getElementById('order-date-from');
+    const orderDateTo = document.getElementById('order-date-to');
+    const presetToday = document.getElementById('preset-today');
+    const presetWeek = document.getElementById('preset-week');
+    const presetMonth = document.getElementById('preset-month');
+    const presetAll = document.getElementById('preset-all');
+
+    if (orderSearchInput) orderSearchInput.addEventListener('input', applyOrderFilters);
+    if (orderStatusFilter) orderStatusFilter.addEventListener('change', applyOrderFilters);
+    if (orderDateFrom) orderDateFrom.addEventListener('change', applyOrderFilters);
+    if (orderDateTo) orderDateTo.addEventListener('change', applyOrderFilters);
+
+    function setDateFilter(daysAgoStart, daysAgoEnd) {
+        if (!orderDateFrom || !orderDateTo) return;
+        const now = new Date();
+        
+        if (daysAgoStart === null && daysAgoEnd === null) {
+            orderDateFrom.value = '';
+            orderDateTo.value = '';
+        } else {
+            const start = new Date(now.getTime() - (daysAgoStart * 24 * 60 * 60 * 1000));
+            const end = new Date(now.getTime() - (daysAgoEnd * 24 * 60 * 60 * 1000));
+            orderDateFrom.value = start.toISOString().split('T')[0];
+            orderDateTo.value = end.toISOString().split('T')[0];
+        }
+        applyOrderFilters();
+    }
+
+    if (presetToday) presetToday.addEventListener('click', () => setDateFilter(0, 0));
+    if (presetWeek) presetWeek.addEventListener('click', () => setDateFilter(7, 0));
+    if (presetMonth) presetMonth.addEventListener('click', () => setDateFilter(30, 0));
+    if (presetAll) presetAll.addEventListener('click', () => setDateFilter(null, null));
 
     window.updateOrderStatus = function(orderId, newStatus) {
         db.collection("orders").doc(orderId).update({ status: newStatus }).then(() => {
@@ -568,10 +657,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportCsvBtn = document.getElementById('export-csv-btn');
     if (exportCsvBtn) {
         exportCsvBtn.addEventListener('click', () => {
-            if (allOrdersList.length === 0) return alert("No orders to export.");
+            if (filteredOrdersList.length === 0) return alert("No orders to export matching the current filters.");
             
             let csvContent = "Date,Name,Email,Phone,Type,Details,Status\n";
-            allOrdersList.forEach(data => {
+            filteredOrdersList.forEach(data => {
                 const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleString() : 'N/A';
                 const name = `"${(data.name || '').replace(/"/g, '""')}"`;
                 const email = `"${(data.email || '').replace(/"/g, '""')}"`;
@@ -604,7 +693,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportPdfBtn = document.getElementById('export-pdf-btn');
     if (exportPdfBtn) {
         exportPdfBtn.addEventListener('click', () => {
-            if (allOrdersList.length === 0) return alert("No orders to export.");
+            if (filteredOrdersList.length === 0) return alert("No orders to export matching the current filters.");
             
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('landscape');
@@ -620,7 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const tableColumn = ["Date", "Name", "Email", "Phone", "Type", "Details", "Status"];
             const tableRows = [];
 
-            allOrdersList.forEach(data => {
+            filteredOrdersList.forEach(data => {
                 const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleString() : 'N/A';
                 const name = data.name || '';
                 const email = data.email || '';
@@ -875,8 +964,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const now = new Date();
         const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         let weekCount = 0;
+        let lastWeekCount = 0;
+        let monthCount = 0;
+        let lastMonthCount = 0;
         let statusCounts = { new: 0, contacted: 0, closed: 0 };
         let mostRecentStr = "None yet.";
+        const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const twoMonthsAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+        const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
         if (allOrdersList.length > 0) {
             const recent = allOrdersList[0];
@@ -890,6 +985,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (order.createdAt) {
                 const d = new Date(order.createdAt.seconds * 1000);
                 if (d > oneWeekAgo) weekCount++;
+                else if (d > twoWeeksAgo) lastWeekCount++;
+                
+                if (d > oneMonthAgo) monthCount++;
+                else if (d > twoMonthsAgo) lastMonthCount++;
             }
             const s = (order.status || 'new').toLowerCase();
             if (statusCounts[s] !== undefined) statusCounts[s]++;
@@ -897,6 +996,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const elWeek = document.getElementById('dash-orders-week');
         if(elWeek) elWeek.textContent = weekCount;
+        
+        const badgeWeek = document.getElementById('badge-orders-week');
+        if(badgeWeek) {
+            if (lastWeekCount === 0) {
+                badgeWeek.textContent = '+100% vs last week';
+                badgeWeek.style.color = 'green';
+                badgeWeek.style.background = '#e6f4ea';
+            } else {
+                const delta = Math.round(((weekCount - lastWeekCount) / lastWeekCount) * 100);
+                badgeWeek.textContent = `${delta > 0 ? '+' : ''}${delta}% vs last week`;
+                badgeWeek.style.color = delta >= 0 ? 'green' : 'red';
+                badgeWeek.style.background = delta >= 0 ? '#e6f4ea' : '#fce8e6';
+            }
+        }
+        
+        const badgeStatus = document.getElementById('badge-orders-status');
+        if(badgeStatus) {
+            if (lastMonthCount === 0) {
+                badgeStatus.textContent = '+100% vs last month';
+                badgeStatus.style.color = 'green';
+                badgeStatus.style.background = '#e6f4ea';
+            } else {
+                const delta = Math.round(((monthCount - lastMonthCount) / lastMonthCount) * 100);
+                badgeStatus.textContent = `${delta > 0 ? '+' : ''}${delta}% vs last month`;
+                badgeStatus.style.color = delta >= 0 ? 'green' : 'red';
+                badgeStatus.style.background = delta >= 0 ? '#e6f4ea' : '#fce8e6';
+            }
+        }
         
         const elStatus = document.getElementById('dash-orders-status');
         if(elStatus) elStatus.innerHTML = `New: ${statusCounts.new}<br>Contacted: ${statusCounts.contacted}<br>Closed: ${statusCounts.closed}`;
@@ -906,6 +1033,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderChart();
     }
+
+    let splitChart = null;
+    let funnelChart = null;
 
     function renderChart() {
         const ctx = document.getElementById('ordersChart');
@@ -920,6 +1050,10 @@ document.addEventListener('DOMContentLoaded', () => {
             labels.push(d.toLocaleDateString(undefined, {month:'short', day:'numeric'}));
         }
 
+        let sampleRequests = 0;
+        let generalInquiries = 0;
+        let statusCounts = { new: 0, contacted: 0, closed: 0 };
+
         allOrdersList.forEach(order => {
             if (order.createdAt) {
                 const d = new Date(order.createdAt.seconds * 1000);
@@ -929,6 +1063,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (diffDays >= 14 && diffDays < 21) weeks[1]++;
                 else if (diffDays >= 21 && diffDays < 28) weeks[0]++;
             }
+
+            if (order.type === 'Sample Request') sampleRequests++;
+            else generalInquiries++;
+
+            const s = (order.status || 'new').toLowerCase();
+            if (statusCounts[s] !== undefined) statusCounts[s]++;
         });
 
         if (dashboardChart) {
@@ -952,6 +1092,54 @@ document.addEventListener('DOMContentLoaded', () => {
                         responsive: true,
                         maintainAspectRatio: false,
                         scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                    }
+                });
+            }
+        }
+
+        const ctxSplit = document.getElementById('splitChart');
+        if (ctxSplit) {
+            if (splitChart) {
+                splitChart.data.datasets[0].data = [sampleRequests, generalInquiries];
+                splitChart.update();
+            } else if (typeof Chart !== 'undefined') {
+                splitChart = new Chart(ctxSplit, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Sample Requests', 'General Inquiries'],
+                        datasets: [{
+                            data: [sampleRequests, generalInquiries],
+                            backgroundColor: ['rgba(163, 26, 30, 0.8)', 'rgba(60, 60, 60, 0.8)'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, cutout: '65%' }
+                });
+            }
+        }
+
+        const ctxFunnel = document.getElementById('funnelChart');
+        if (ctxFunnel) {
+            if (funnelChart) {
+                funnelChart.data.datasets[0].data = [statusCounts.new, statusCounts.contacted, statusCounts.closed];
+                funnelChart.update();
+            } else if (typeof Chart !== 'undefined') {
+                funnelChart = new Chart(ctxFunnel, {
+                    type: 'bar',
+                    data: {
+                        labels: ['New', 'Contacted', 'Closed'],
+                        datasets: [{
+                            label: 'Status Funnel',
+                            data: [statusCounts.new, statusCounts.contacted, statusCounts.closed],
+                            backgroundColor: ['#f39c12', '#3498db', '#2ecc71'],
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        plugins: { legend: { display: false } },
+                        scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
                     }
                 });
             }

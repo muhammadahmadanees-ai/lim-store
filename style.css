@@ -1232,14 +1232,11 @@ input:focus, textarea:focus, select:focus {
     transition: box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
-/* ── Order samples btn bounce ── */
+/*  Order samples btn bounce removed per request  */
 #order-samples-btn {
-    animation: subtleBounce 3s ease-in-out infinite;
+    /* animation: subtleBounce 3s ease-in-out infinite; */
 }
-@keyframes subtleBounce {
-    0%, 100% { transform: translateY(0); }
-    50%       { transform: translateY(-3px); }
-}
+
 
 /* Product Reference Code */
 .ref-code {
@@ -2112,4 +2109,40 @@ input:focus, textarea:focus, select:focus {
     width: 30px;
     height: 30px;
   }
+}
+
+/* Skeleton Loader */
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+  padding: 2rem 0;
+}
+.skeleton-card {
+  background: var(--card-bg, #fff);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  border: 1px solid rgba(0,0,0,0.05);
+}
+.skeleton-img, .skeleton-text {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+.skeleton-img {
+  width: 100%;
+  height: 250px;
+}
+.skeleton-text {
+  height: 20px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+}
+.skeleton-text.short {
+  width: 60%;
+}
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

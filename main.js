@@ -1,3 +1,13 @@
+window.openSampleFormFromModal = function() {
+    const productName = document.getElementById('modal-title').textContent;
+    document.getElementById('product-modal').classList.remove('show');
+    const tileInput = document.getElementById('sample-form-tile');
+    if (tileInput) {
+        tileInput.value = productName;
+    }
+    document.getElementById('sample-form-modal').classList.add('show');
+};
+
 document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Sticky Navigation Effect
@@ -43,6 +53,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = new FormData(form);
             formData.append("access_key", "2a7f202f-6ff3-4475-b717-9bb6c26e5af1");
             formData.append("subject", "New General Inquiry - LIM Factory");
+
+            try {
+                firebase.firestore().collection("orders").add({
+                    name: formData.get("name") || "",
+                    email: formData.get("email") || "",
+                    phone: "",
+                    type: "General Inquiry",
+                    message: formData.get("message") || "",
+                    status: "new",
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } catch (e) { console.error("Firebase save error:", e); }
 
             fetch('https://api.web3forms.com/submit', {
                 method: 'POST',
@@ -178,7 +200,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = collectionsSec.querySelector('.container');
         if (!container) return;
 
-        container.innerHTML = '<p style="text-align: center; padding: 3rem 0;">Loading collections catalog...</p>';
+        container.innerHTML = `
+            <div class="skeleton-grid">
+                ${Array(8).fill(`
+                    <div class="skeleton-card">
+                        <div class="skeleton-img"></div>
+                        <div style="padding: 15px;">
+                            <div class="skeleton-text"></div>
+                            <div class="skeleton-text short"></div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
 
         db.collection("collections").orderBy("order").get().then((querySnapshot) => {
             collectionsData = [];
@@ -842,7 +876,13 @@ document.addEventListener('DOMContentLoaded', () => {
         searchResultsList.innerHTML = '';
 
         if (results.length === 0) {
-            searchResultsList.innerHTML = '<p class="no-search-results">No products match your search.</p>';
+            searchResultsList.innerHTML = `
+                <div class="search-empty-state" style="text-align: center; padding: 3rem 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <i class="far fa-meh" style="font-size: 3rem; color: #d0d0d0; margin-bottom: 1rem;"></i>
+                    <h4 style="margin-bottom: 0.5rem; color: var(--text-color); font-weight: 500;">No results found</h4>
+                    <p style="font-size: 0.9rem; color: #777; max-width: 250px;">We couldn't find any products matching your search. Try a different keyword or browse collections.</p>
+                </div>
+            `;
             if (searchResultsWrap) searchResultsWrap.style.display = 'block';
             return;
         }
@@ -1273,6 +1313,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = new FormData(form);
             formData.append("access_key", "2a7f202f-6ff3-4475-b717-9bb6c26e5af1");
             formData.append("subject", "New Sample Request - LIM Factory");
+
+            try {
+                firebase.firestore().collection("orders").add({
+                    name: formData.get("name") || "",
+                    email: formData.get("email") || "",
+                    phone: formData.get("phone") || "",
+                    type: "Sample Request",
+                    collection: formData.get("collection") || "",
+                    tile: formData.get("tile") || "",
+                    quantity: formData.get("quantity") || "",
+                    address: formData.get("address") || "",
+                    city: formData.get("city") || "",
+                    notes: formData.get("notes") || "",
+                    status: "new",
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } catch (e) { console.error("Firebase save error:", e); }
 
             fetch('https://api.web3forms.com/submit', {
                 method: 'POST',

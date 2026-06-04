@@ -349,7 +349,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>Tile / Product Name</label>
-                            <input type="text" name="tile" placeholder="e.g. Ash Matrix, or leave blank">
+                            <input type="text" id="sample-form-tile" name="tile" placeholder="e.g. Ash Matrix, or leave blank">
                         </div>
                         <div class="form-group">
                             <label>Number of Samples *</label>
@@ -419,9 +419,14 @@
             <a href="mailto:limfactoryy@gmail.com" target="_blank" rel="noreferrer" class="pm-social-icon email" title="Order via Email"><i class="fas fa-envelope"></i></a>
           </div>
 
-          <button class="pm-btn-inquire" onclick="document.getElementById('contact').scrollIntoView(); document.getElementById('product-modal').classList.remove('show');">
-            INQUIRE NOW
-          </button>
+          <div style="display: flex; gap: 10px; margin-top: 15px;">
+              <button class="pm-btn-inquire" style="flex: 1;" onclick="openSampleFormFromModal()">
+                REQUEST SAMPLE
+              </button>
+              <button class="pm-btn-inquire" style="flex: 1;" onclick="document.getElementById('contact').scrollIntoView(); document.getElementById('product-modal').classList.remove('show');">
+                INQUIRE NOW
+              </button>
+          </div>
         </div>
       </div>
     </div>
@@ -491,7 +496,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="./firebase.js"></script>
-    <script src="./main.js?v=2"></script>
+    <script src="./main.js?v=3"></script>
 
     <!-- Sticky WhatsApp Button -->
     <a href="https://wa.me/923164934687?text=Hello%20LIM%20Factory%21%20%F0%9F%91%8B%20I%20visited%20your%20website%20and%20I%27m%20interested%20in%20placing%20an%20order.%20Could%20you%20please%20help%20me%20with%20your%20terrazzo%20tile%20collections%2C%20pricing%2C%20and%20availability%3F%20Thank%20you%21" class="whatsapp-sticky-button" target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp">

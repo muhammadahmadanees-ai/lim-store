@@ -101,18 +101,30 @@
                     <div class="stat-card">
                         <h5>Orders This Week</h5>
                         <p id="dash-orders-week">0</p>
+                        <span id="badge-orders-week" style="display: inline-block; margin-top: 8px; font-size: 0.85rem; padding: 4px 10px; border-radius: 12px; background: #eee;"></span>
                     </div>
                     <div class="stat-card">
                         <h5>Orders by Status</h5>
                         <p id="dash-orders-status" style="font-size: 1rem; line-height: 1.5; color: #444; margin-top: 10px;">New: 0<br>Contacted: 0<br>Closed: 0</p>
+                        <span id="badge-orders-status" style="display: inline-block; margin-top: 8px; font-size: 0.85rem; padding: 4px 10px; border-radius: 12px; background: #eee;"></span>
                     </div>
                     <div class="stat-card" style="grid-column: 1 / -1;">
                         <h5>Most Recent Order</h5>
                         <p id="dash-recent-order" style="font-size: 1.1rem; color: #555; margin-top: 10px;">None yet.</p>
                     </div>
                 </div>
-                <div class="dashboard-chart-container" style="margin-top: 30px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eee;">
-                    <canvas id="ordersChart" width="400" height="100"></canvas>
+                <div class="dashboard-chart-container" style="margin-top: 30px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eee; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px;">
+                    <div style="grid-column: 1 / -1;">
+                        <canvas id="ordersChart" width="400" height="100"></canvas>
+                    </div>
+                    <div style="grid-column: 1 / 2; display: flex; flex-direction: column; align-items: center;">
+                        <h4 style="margin-bottom: 15px; color: #555;">Inquiry Split</h4>
+                        <canvas id="splitChart" width="200" height="200" style="max-height: 250px;"></canvas>
+                    </div>
+                    <div style="grid-column: 2 / 4; display: flex; flex-direction: column; align-items: center;">
+                        <h4 style="margin-bottom: 15px; color: #555;">Status Funnel</h4>
+                        <canvas id="funnelChart" width="400" height="200" style="max-height: 250px;"></canvas>
+                    </div>
                 </div>
             </div>
 
@@ -150,6 +162,31 @@
                         <button id="export-pdf-btn" class="btn btn-outline"><i class="fas fa-file-pdf"></i> Export PDF</button>
                     </div>
                 </div>
+                
+                <div class="orders-filter-container" style="display: flex; gap: 15px; margin-bottom: 10px;">
+                    <input type="text" id="order-search-input" placeholder="Search by name, email, or type..." style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: var(--font-primary);">
+                    <select id="order-status-filter" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: var(--font-primary); min-width: 150px;">
+                        <option value="All">All Statuses</option>
+                        <option value="New">New</option>
+                        <option value="Contacted">Contacted</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                </div>
+
+                <div class="orders-date-filter-container" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; background: #f9f9f9; padding: 10px; border-radius: 6px; border: 1px solid #eee;">
+                    <strong style="font-size: 0.9rem; color: #555;">Date Range:</strong>
+                    <input type="date" id="order-date-from" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: var(--font-primary);">
+                    <span style="color: #777;">to</span>
+                    <input type="date" id="order-date-to" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: var(--font-primary);">
+                    
+                    <div class="date-presets" style="display: flex; gap: 5px; margin-left: auto;">
+                        <button class="btn btn-outline" id="preset-today" style="padding: 5px 10px; font-size: 0.8rem;">Today</button>
+                        <button class="btn btn-outline" id="preset-week" style="padding: 5px 10px; font-size: 0.8rem;">This Week</button>
+                        <button class="btn btn-outline" id="preset-month" style="padding: 5px 10px; font-size: 0.8rem;">This Month</button>
+                        <button class="btn btn-outline" id="preset-all" style="padding: 5px 10px; font-size: 0.8rem; background: var(--light-bg); color: var(--text-color);">All Time</button>
+                    </div>
+                </div>
+
                 <div class="orders-table-wrapper">
                     <table class="orders-table">
                         <thead>
