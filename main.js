@@ -55,16 +55,15 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append("subject", "New General Inquiry - LIM Factory");
 
             try {
-                firebase.firestore().collection("orders").add({
+                window.supabaseClient.from('orders').insert([{
                     name: formData.get("name") || "",
                     email: formData.get("email") || "",
                     phone: "",
                     type: "General Inquiry",
                     message: formData.get("message") || "",
-                    status: "new",
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            } catch (e) { console.error("Firebase save error:", e); }
+                    status: "new"
+                }]).then(() => {});
+            } catch (e) { console.error("Supabase save error:", e); }
 
             fetch('https://api.web3forms.com/submit', {
                 method: 'POST',
@@ -129,7 +128,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const productsView = document.getElementById('products-view');
     const collectionsView = document.getElementById('collections');
     const heroView = document.querySelector('.hero');
-    const db = firebase.firestore();
 
     // Function to show collections view
     function showCollectionsView() {
@@ -214,10 +212,10 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        db.collection("collections").orderBy("order").get().then((querySnapshot) => {
+        window.supabaseClient.from("collections").select('*').order('order').then(({ data, error }) => {
+            if (error) throw error;
             collectionsData = [];
-            querySnapshot.forEach((doc) => {
-                const raw = doc.data();
+            data.forEach((raw) => {
                 const cleanData = {};
                 for (let key in raw) {
                     const cleanKey = key.toLowerCase().replace(/[\s_]+/g, '');
@@ -229,11 +227,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     imgUrl = 'https://files.catbox.moe/j6ipn4.png';
                 }
                 collectionsData.push({
-                    id: doc.id,
+                    id: raw.id,
                     name: catName,
                     desc: cleanData.description || cleanData.desc || cleanData.detail || '',
                     img: imgUrl,
-                    parentId: cleanData.parentid || '',
+                    parentId: cleanData.parentid || cleanData.parent_id || '',
                     type: cleanData.type || 'collection',
                     order: cleanData.order !== undefined ? Number(cleanData.order) : 0,
                     slug: toSlug(catName)
@@ -318,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
             handleRoute();
 
         }).catch((error) => {
-            console.error("Error fetching collections from Firebase:", error);
+            console.error("Error fetching collections from Supabase:", error);
             container.innerHTML = '<p style="text-align: center; color: red;">Error loading collections.</p>';
         });
     }
@@ -629,16 +627,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         productsContainer.innerHTML = '<p style="text-align: center; width: 100%;">Loading products...</p>';
 
-        db.collection("collections").doc(collectionId).collection("products").orderBy("order").get().then((querySnapshot) => {
-
+        window.supabaseClient.from("products").select('*').eq('collection_id', collectionId).order('order').then(({ data, error }) => {
+            if (error) throw error;
+            
             productsContainer.innerHTML = '';
-            if (querySnapshot.empty) {
-                productsContainer.innerHTML = '<p style="text-align: center; width: 100%;">No products found in this collection yet. Add them in Firebase!</p>';
+            if (!data || data.length === 0) {
+                productsContainer.innerHTML = '<p style="text-align: center; width: 100%;">No products found in this collection yet. Add them in Supabase!</p>';
                 return;
             }
 
-            querySnapshot.forEach((doc) => {
-                const fields = extractData(doc.data());
+            data.forEach((raw) => {
+                const fields = extractData(raw);
                 const card = document.createElement('div');
                 card.className = 'collection-card';
 
@@ -685,8 +684,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 observer.observe(card);
             });
         }).catch((error) => {
-            console.error("Error fetching products from Firebase:", error);
-            productsContainer.innerHTML = '<p style="text-align: center; width: 100%; color: red;">Error loading products. Check your Firebase permissions.</p>';
+            console.error("Error fetching products from Supabase:", error);
+            productsContainer.innerHTML = '<p style="text-align: center; width: 100%; color: red;">Error loading products. Check your Supabase connection.</p>';
         });
     }
 
@@ -696,41 +695,31 @@ document.addEventListener('DOMContentLoaded', () => {
     // 6. Dynamic FAQ Sizes
     const faqSizesAnswer = document.getElementById('faq-sizes-answer');
     if (faqSizesAnswer) {
-        db.collection("collections").get().then((colSnap) => {
+        window.supabaseClient.from("products").select('sizes').then(({ data, error }) => {
+            if (error || !data) return;
             let allSizes = new Set();
-            let promises = [];
-            colSnap.forEach(col => {
-                const data = col.data();
-                if(data.type !== 'category') {
-                    promises.push(db.collection("collections").doc(col.id).collection("products").get().then((pSnap) => {
-                        pSnap.forEach(pDoc => {
-                            const pData = pDoc.data();
-                            const sizes = pData.sizes || pData.size;
-                            if (sizes) {
-                                if (typeof sizes === 'string') {
-                                    sizes.split(',').forEach(s => allSizes.add(s.trim()));
-                                } else if (Array.isArray(sizes)) {
-                                    sizes.forEach(s => allSizes.add(s));
-                                }
-                            }
-                        });
-                    }));
+            data.forEach(pData => {
+                const sizes = pData.sizes || pData.size;
+                if (sizes) {
+                    if (typeof sizes === 'string') {
+                        sizes.split(',').forEach(s => allSizes.add(s.trim()));
+                    } else if (Array.isArray(sizes)) {
+                        sizes.forEach(s => allSizes.add(s));
+                    }
                 }
             });
-            Promise.all(promises).then(() => {
-                const sizesArray = Array.from(allSizes).filter(s => s && s.trim().length > 0);
-                if (sizesArray.length > 0) {
-                    let formattedSizes = sizesArray.map(s => `<strong>${s.replace(/x/gi, '×')} cm</strong>`);
-                    let finalString = '';
-                    if (formattedSizes.length === 1) finalString = formattedSizes[0];
-                    else if (formattedSizes.length === 2) finalString = `${formattedSizes[0]} and ${formattedSizes[1]}`;
-                    else {
-                        const last = formattedSizes.pop();
-                        finalString = `${formattedSizes.join(', ')}, and ${last}`;
-                    }
-                    faqSizesAnswer.innerHTML = `Our standard tile sizes are ${finalString}. We also offer fully custom sizes for bespoke projects — contact us to discuss your requirements.`;
+            const sizesArray = Array.from(allSizes).filter(s => s && s.trim().length > 0);
+            if (sizesArray.length > 0) {
+                let formattedSizes = sizesArray.map(s => `<strong>${s.replace(/x/gi, '×')} cm</strong>`);
+                let finalString = '';
+                if (formattedSizes.length === 1) finalString = formattedSizes[0];
+                else if (formattedSizes.length === 2) finalString = `${formattedSizes[0]} and ${formattedSizes[1]}`;
+                else {
+                    const last = formattedSizes.pop();
+                    finalString = `${formattedSizes.join(', ')}, and ${last}`;
                 }
-            }).catch(err => console.error("Error processing dynamic sizes:", err));
+                faqSizesAnswer.innerHTML = `Our standard tile sizes are ${finalString}. We also offer fully custom sizes for bespoke projects — contact us to discuss your requirements.`;
+            }
         }).catch(err => console.error("Error fetching collections for sizes:", err));
     }
 
@@ -802,12 +791,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const promises = [];
         collectionsData.forEach(col => {
             if (col.type === 'category') return; // Folders don't have products directly
-            const p = db.collection("collections").doc(col.id).collection("products").orderBy("order").get().then((pSnapshot) => {
-                pSnapshot.forEach(pDoc => {
-                    const raw = pDoc.data();
+            const p = window.supabaseClient.from("products").select('*').eq('collection_id', col.id).order('order').then(({ data, error }) => {
+                if (error) throw error;
+                if (!data) return;
+                data.forEach(raw => {
                     const pFields = extractData(raw);
                     allProductsIndex.push({
-                        id: pDoc.id,
+                        id: raw.id,
                         name: pFields.name,
                         slug: toSlug(pFields.name),
                         desc: pFields.desc,

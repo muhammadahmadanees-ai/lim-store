@@ -1,8 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    const db = firebase.firestore();
-    const auth = firebase.auth();
-
     // DOM Elements
     const loginContainer = document.getElementById('login-container');
     const adminDashboard = document.getElementById('admin-dashboard');
@@ -17,48 +14,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ─── AUTHENTICATION ──────────────────────────────────────────
 
-    // Listen for auth state changes
-    auth.onAuthStateChanged((user) => {
+    window.supabaseClient.auth.getSession().then(({ data: { session } }) => {
+        let user = session?.user;
         if (user) {
-            // User is signed in.
             loginContainer.style.display = 'none';
             adminDashboard.style.display = 'block';
             loadCollections();
             loadOrders();
         } else {
-            // No user is signed in.
+            loginContainer.style.display = 'flex';
+            adminDashboard.style.display = 'none';
+        }
+    });
+
+    window.supabaseClient.auth.onAuthStateChange((_event, session) => {
+        let user = session?.user;
+        if (user) {
+            loginContainer.style.display = 'none';
+            adminDashboard.style.display = 'block';
+            loadCollections();
+            loadOrders();
+        } else {
             loginContainer.style.display = 'flex';
             adminDashboard.style.display = 'none';
         }
     });
 
 
-    loginForm.addEventListener('submit', (e) => {
+    loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = loginEmail.value;
-        const password = loginPassword.value;
-        const btn = loginForm.querySelector('button');
-
-        btn.textContent = 'Logging in...';
-        btn.disabled = true;
-        loginError.style.display = 'none';
-
-        auth.signInWithEmailAndPassword(email, password)
-            .then(() => {
-                btn.textContent = 'Login';
-                btn.disabled = false;
-                loginForm.reset();
-            })
-            .catch((error) => {
-                btn.textContent = 'Login';
-                btn.disabled = false;
-                loginError.textContent = error.message;
-                loginError.style.display = 'block';
-            });
+        const pass = loginPassword.value;
+        
+        const { error } = await window.supabaseClient.auth.signInWithPassword({ email, password: pass });
+        if (error) {
+            loginError.textContent = error.message;
+            loginError.style.display = 'block';
+        } else {
+            loginError.style.display = 'none';
+        }
     });
 
-    logoutBtn.addEventListener('click', () => {
-        auth.signOut();
+    logoutBtn.addEventListener('click', async () => {
+        await window.supabaseClient.auth.signOut();
     });
 
     // ─── TAB NAVIGATION ──────────────────────────────────────────
@@ -129,137 +127,74 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Load Collections
-    function loadCollections() {
+    async function loadCollections() {
         collectionsList.innerHTML = '<p>Loading collections...</p>';
-        db.collection("collections").orderBy("order").onSnapshot((snapshot) => {
-            allCollectionsList = [];
-            snapshot.forEach((doc) => {
-                const raw = doc.data();
-                const fields = extractData(raw);
-                allCollectionsList.push({
-                    id: doc.id,
-                    name: fields.name,
-                    type: raw.type || 'collection',
-                    parentId: raw.parentId || '',
-                    order: fields.order
-                });
-            });
-
-            collectionsList.innerHTML = '';
-            if (snapshot.empty) {
-                collectionsList.innerHTML = '<p>No collections found.</p>';
-                const elTot = document.getElementById('dash-tot-collections');
-                if (elTot) elTot.textContent = '0';
-                return;
+        const { data, error } = await window.supabaseClient.from("collections").select('*').order('order');
+        if (error) {
+            console.error("Error loading collections:", error);
+            collectionsList.innerHTML = '<p>Error loading collections.</p>';
+            return;
+        }
+        
+        allCollectionsList = [];
+        
+        data.forEach(raw => {
+            const rowData = {};
+            for (let k in raw) {
+                rowData[k.toLowerCase().replace(/[\s_]+/g, '')] = raw[k];
             }
-            
+            allCollectionsList.push({
+                id: raw.id,
+                name: rowData.name || rowData.title || '',
+                desc: rowData.description || rowData.desc || '',
+                img: rowData.img || rowData.imageurl || '',
+                order: raw.order || 0,
+                type: rowData.type || 'collection',
+                parentId: raw.parent_id || rowData.parentid || ''
+            });
+        });
+
+        collectionsList.innerHTML = '';
+        if (allCollectionsList.length === 0) {
+            collectionsList.innerHTML = '<p>No collections found.</p>';
             const elTot = document.getElementById('dash-tot-collections');
-            if (elTot) elTot.textContent = allCollectionsList.length;
-            countTotalProducts();
+            if (elTot) elTot.textContent = '0';
+            return;
+        }
+        
+        const elTot = document.getElementById('dash-tot-collections');
+        if (elTot) elTot.textContent = allCollectionsList.length;
+        countTotalProducts();
 
-            snapshot.forEach((doc) => {
-                const raw = doc.data();
-                const data = extractData(raw);
-                const type = raw.type || 'collection';
-                const parentId = raw.parentId || '';
-                const parentName = parentId ? (allCollectionsList.find(p => p.id === parentId)?.name || 'Unknown') : '';
+        allCollectionsList.forEach(data => {
+            const parentName = data.parentId ? (allCollectionsList.find(p => p.id === data.parentId)?.name || 'Unknown') : '';
+            const parentBadge = data.parentId ? `<span style="background: #f3f4f6; color: #4b5563; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; display: inline-block;">Parent: ${parentName}</span>` : '';
+            const typeBadge = `<span style="background: ${data.type === 'category' ? '#e0f2fe' : '#f0fdf4'}; color: ${data.type === 'category' ? '#0369a1' : '#15803d'}; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; font-weight: bold; display: inline-block;">${data.type}</span>`;
 
-                const parentBadge = parentId ? `<span style="background: #f3f4f6; color: #4b5563; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; display: inline-block;">Parent: ${parentName}</span>` : '';
-                const typeBadge = `<span style="background: ${type === 'category' ? '#e0f2fe' : '#f0fdf4'}; color: ${type === 'category' ? '#0369a1' : '#15803d'}; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; font-weight: bold; display: inline-block;">${type}</span>`;
-
-                const card = document.createElement('div');
-                card.className = 'admin-card';
-                card.draggable = true;
-                card.dataset.id = doc.id;
-                card.innerHTML = `
-                    <div class="admin-card-img" style="background-image: url('${data.img}')">
-                        ${(!data.img) ? 'No Image' : ''}
+            const card = document.createElement('div');
+            card.className = 'admin-card';
+            card.draggable = true;
+            card.dataset.id = data.id;
+            card.innerHTML = `
+                <div class="admin-card-img" style="background-image: url('${data.img}')">
+                    ${(!data.img) ? 'No Image' : ''}
+                </div>
+                <div class="admin-card-content">
+                    <h4>${data.name}</h4>
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px;">
+                        ${typeBadge}
+                        ${parentBadge}
                     </div>
-                    <div class="admin-card-content">
-                        <h4>${data.name}</h4>
-                        <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px;">
-                            ${typeBadge}
-                            ${parentBadge}
-                        </div>
-                        <p class="admin-card-desc">${data.desc}</p>
-                        <p style="font-size: 0.8rem; color: #999;">Order: ${data.order}</p>
-                        <div class="admin-actions">
-                            ${type !== 'category' ? `<button class="admin-btn admin-btn-view" onclick="openProducts('${doc.id}', '${data.name.replace(/'/g, "\\'")}')">Products</button>` : ''}
-                            <button class="admin-btn admin-btn-edit" onclick="editCollection('${doc.id}')"><i class="fas fa-edit"></i> Edit</button>
-                            <button class="admin-btn admin-btn-delete" onclick="deleteCollection('${doc.id}')"><i class="fas fa-trash"></i></button>
-                        </div>
+                    <p class="admin-card-desc">${data.desc}</p>
+                    <p style="font-size: 0.8rem; color: #999;">Order: ${data.order}</p>
+                    <div class="admin-actions">
+                        ${data.type !== 'category' ? `<button class="admin-btn admin-btn-view" onclick="openProducts('${data.id}', '${data.name.replace(/'/g, "\\'")}')">Products</button>` : ''}
+                        <button class="admin-btn admin-btn-edit" onclick="editCollection('${data.id}')"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="admin-btn admin-btn-delete" onclick="deleteCollection('${data.id}')"><i class="fas fa-trash"></i></button>
                     </div>
-                `;
-                collectionsList.appendChild(card);
-            });
-        }, (error) => {
-            // If orderBy fails (missing index or field), fall back to unordered query
-            console.warn("orderBy failed, falling back to unordered:", error.message);
-            db.collection("collections").onSnapshot((snapshot) => {
-                allCollectionsList = [];
-                snapshot.forEach((doc) => {
-                    const raw = doc.data();
-                    const fields = extractData(raw);
-                    allCollectionsList.push({
-                        id: doc.id,
-                        name: fields.name,
-                        type: raw.type || 'collection',
-                        parentId: raw.parentId || '',
-                        order: fields.order
-                    });
-                });
-
-                collectionsList.innerHTML = '';
-                if (snapshot.empty) { 
-                    collectionsList.innerHTML = '<p>No collections found.</p>'; 
-                    const elTot = document.getElementById('dash-tot-collections');
-                    if (elTot) elTot.textContent = '0';
-                    return; 
-                }
-                
-                const elTot = document.getElementById('dash-tot-collections');
-                if (elTot) elTot.textContent = allCollectionsList.length;
-                countTotalProducts();
-
-                const docs = [];
-                snapshot.forEach(doc => docs.push(doc));
-                docs.sort((a, b) => (a.data().order || 0) - (b.data().order || 0));
-                docs.forEach((doc) => {
-                    const raw = doc.data();
-                    const data = extractData(raw);
-                    const type = raw.type || 'collection';
-                    const parentId = raw.parentId || '';
-                    const parentName = parentId ? (allCollectionsList.find(p => p.id === parentId)?.name || 'Unknown') : '';
-
-                    const parentBadge = parentId ? `<span style="background: #f3f4f6; color: #4b5563; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; display: inline-block;">Parent: ${parentName}</span>` : '';
-                    const typeBadge = `<span style="background: ${type === 'category' ? '#e0f2fe' : '#f0fdf4'}; color: ${type === 'category' ? '#0369a1' : '#15803d'}; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; font-weight: bold; display: inline-block;">${type}</span>`;
-
-                    const card = document.createElement('div');
-                    card.className = 'admin-card';
-                    card.draggable = true;
-                    card.dataset.id = doc.id;
-                    card.innerHTML = `
-                        <div class="admin-card-img" style="background-image: url('${data.img}')">
-                            ${(!data.img) ? 'No Image' : ''}
-                        </div>
-                        <div class="admin-card-content">
-                            <h4>${data.name}</h4>
-                            <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px;">
-                                ${typeBadge}
-                                ${parentBadge}
-                            </div>
-                            <p class="admin-card-desc">${data.desc}</p>
-                            <p style="font-size: 0.8rem; color: #999;">Order: ${data.order}</p>
-                            <div class="admin-actions">
-                                ${type !== 'category' ? `<button class="admin-btn admin-btn-view" onclick="openProducts('${doc.id}', '${data.name.replace(/'/g, "\\'")}')">Products</button>` : ''}
-                                <button class="admin-btn admin-btn-edit" onclick="editCollection('${doc.id}')"><i class="fas fa-edit"></i> Edit</button>
-                                <button class="admin-btn admin-btn-delete" onclick="deleteCollection('${doc.id}')"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </div>
-                    `;
-                    collectionsList.appendChild(card);
-                });
-            });
+                </div>
+            `;
+            collectionsList.appendChild(card);
         });
     }
 
@@ -273,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     colClose.addEventListener('click', () => colModal.classList.remove('show'));
 
-    colForm.addEventListener('submit', (e) => {
+    colForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = document.getElementById('collection-id').value;
         const data = {
@@ -281,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
             description: document.getElementById('col-desc').value,
             img: document.getElementById('col-img').value,
             order: parseInt(document.getElementById('col-order').value) || 0,
-            parentId: document.getElementById('col-parent').value || '',
+            parent_id: document.getElementById('col-parent').value || null,
             type: document.getElementById('col-type').value || 'collection'
         };
 
@@ -289,46 +224,52 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.textContent = 'Saving...';
         btn.disabled = true;
 
-        if (id) {
-            // Update
-            db.collection("collections").doc(id).set(data, { merge: true }).then(() => {
-                colModal.classList.remove('show');
-            }).catch((err) => { console.error("Save error:", err); alert("Error saving: " + err.message); })
-              .finally(() => { btn.textContent = 'Save Collection'; btn.disabled = false; });
-        } else {
-            // Add
-            db.collection("collections").add(data).then(() => {
-                colModal.classList.remove('show');
-            }).catch((err) => { console.error("Save error:", err); alert("Error saving: " + err.message); })
-              .finally(() => { btn.textContent = 'Save Collection'; btn.disabled = false; });
+        try {
+            if (id) {
+                // Update
+                const { error } = await window.supabaseClient.from("collections").update(data).eq('id', id);
+                if (error) throw error;
+            } else {
+                // Add
+                const { error } = await window.supabaseClient.from("collections").insert([data]);
+                if (error) throw error;
+            }
+            colModal.classList.remove('show');
+            loadCollections();
+        } catch (err) {
+            console.error("Save error:", err);
+            alert("Error saving: " + err.message);
+        } finally {
+            btn.textContent = 'Save Collection';
+            btn.disabled = false;
         }
     });
 
-    window.editCollection = function(id) {
-        db.collection("collections").doc(id).get().then((doc) => {
-            if (doc.exists) {
-                const raw = doc.data();
-                const data = extractData(raw);
-                const parentId = raw.parentId || '';
-                const type = raw.type || 'collection';
+    window.editCollection = async function(id) {
+        const { data, error } = await window.supabaseClient.from("collections").select('*').eq('id', id).single();
+        if (data) {
+            const raw = data;
+            const extracted = extractData(raw);
+            const parentId = raw.parent_id || '';
+            const type = raw.type || 'collection';
 
-                document.getElementById('collection-id').value = doc.id;
-                document.getElementById('col-name').value = data.name;
-                document.getElementById('col-desc').value = data.desc;
-                document.getElementById('col-img').value = data.img;
-                document.getElementById('col-order').value = data.order;
-                
-                document.getElementById('col-type').value = type;
-                populateParentSelect(doc.id, parentId);
+            document.getElementById('collection-id').value = raw.id;
+            document.getElementById('col-name').value = extracted.name;
+            document.getElementById('col-desc').value = extracted.desc;
+            document.getElementById('col-img').value = extracted.img;
+            document.getElementById('col-order').value = extracted.order;
+            
+            document.getElementById('col-type').value = type;
+            populateParentSelect(raw.id, parentId);
 
-                colModal.classList.add('show');
-            }
-        });
+            colModal.classList.add('show');
+        }
     };
 
-    window.deleteCollection = function(id) {
+    window.deleteCollection = async function(id) {
         if (confirm("Are you sure you want to delete this collection? All products inside must be deleted manually first if you want to keep Firebase clean.")) {
-            db.collection("collections").doc(id).delete();
+            await window.supabaseClient.from("collections").delete().eq('id', id);
+            loadCollections();
         }
     };
 
@@ -359,75 +300,57 @@ document.addEventListener('DOMContentLoaded', () => {
         loadProducts(colId);
     };
 
-    let unsubscribeProducts = null;
-    function loadProducts(colId) {
+    async function loadProducts(colId) {
         productsList.innerHTML = '<p>Loading products...</p>';
-        if (unsubscribeProducts) unsubscribeProducts();
+        const { data, error } = await window.supabaseClient.from("products").select('*').eq('collection_id', colId).order('order');
+        if (error) {
+            console.error("Error loading products:", error);
+            productsList.innerHTML = '<p>Error loading products.</p>';
+            return;
+        }
 
-        unsubscribeProducts = db.collection("collections").doc(colId).collection("products").orderBy("order").onSnapshot((snapshot) => {
-            productsList.innerHTML = '';
-            if (snapshot.empty) {
-                productsList.innerHTML = '<p>No products found in this collection.</p>';
-                return;
+        productsList.innerHTML = '';
+        if (data.length === 0) {
+            productsList.innerHTML = '<p>No products found in this collection.</p>';
+            return;
+        }
+
+        data.forEach(raw => {
+            const rowData = {};
+            for (let k in raw) {
+                rowData[k.toLowerCase().replace(/[\s_]+/g, '')] = raw[k];
             }
-            snapshot.forEach((doc) => {
-                const raw = doc.data();
-                const data = extractData(raw);
-                const card = document.createElement('div');
-                card.className = 'admin-card';
-                card.draggable = true;
-                card.dataset.id = doc.id;
-                card.innerHTML = `
-                    <div class="admin-card-img" style="background-image: url('${data.img}')">
-                        ${(!data.img) ? 'No Image' : ''}
+            const prodData = {
+                id: raw.id,
+                name: rowData.name || rowData.title || '',
+                price: rowData.price || '',
+                desc: rowData.description || rowData.desc || '',
+                img: rowData.img || rowData.imageurl || '',
+                sizes: rowData.sizes || '',
+                refcode: rowData.refcode || '',
+                order: raw.order || 0
+            };
+            
+            const card = document.createElement('div');
+            card.className = 'admin-card';
+            card.draggable = true;
+            card.dataset.id = prodData.id;
+            card.innerHTML = `
+                <div class="admin-card-img" style="background-image: url('${prodData.img}')">
+                    ${(!prodData.img) ? 'No Image' : ''}
+                </div>
+                <div class="admin-card-content">
+                    <h4>${prodData.name}</h4>
+                    ${prodData.price ? `<p style="color:var(--primary-color); font-weight:bold; margin-bottom: 5px;">${prodData.price}</p>` : ''}
+                    <p class="admin-card-desc">${prodData.desc}</p>
+                    <p style="font-size: 0.8rem; color: #999;">Order: ${prodData.order}</p>
+                    <div class="admin-actions">
+                        <button class="admin-btn admin-btn-edit" onclick="editProduct('${colId}', '${prodData.id}')"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="admin-btn admin-btn-delete" onclick="deleteProduct('${colId}', '${prodData.id}')"><i class="fas fa-trash"></i></button>
                     </div>
-                    <div class="admin-card-content">
-                        <h4>${data.name}</h4>
-                        ${data.price ? `<p style="color:var(--primary-color); font-weight:bold; margin-bottom: 5px;">${data.price}</p>` : ''}
-                        <p class="admin-card-desc">${data.desc}</p>
-                        <p style="font-size: 0.8rem; color: #999;">Order: ${data.order}</p>
-                        <div class="admin-actions">
-                            <button class="admin-btn admin-btn-edit" onclick="editProduct('${colId}', '${doc.id}')"><i class="fas fa-edit"></i> Edit</button>
-                            <button class="admin-btn admin-btn-delete" onclick="deleteProduct('${colId}', '${doc.id}')"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>
-                `;
-                productsList.appendChild(card);
-            });
-        }, (error) => {
-            // Fallback: client-side sort if orderBy index is missing
-            console.warn("Products orderBy failed, falling back:", error.message);
-            db.collection("collections").doc(colId).collection("products").onSnapshot((snapshot) => {
-                productsList.innerHTML = '';
-                if (snapshot.empty) { productsList.innerHTML = '<p>No products found in this collection.</p>'; return; }
-                const docs = [];
-                snapshot.forEach(doc => docs.push(doc));
-                docs.sort((a, b) => (a.data().order || 0) - (b.data().order || 0));
-                docs.forEach((doc) => {
-                    const raw = doc.data();
-                    const data = extractData(raw);
-                    const card = document.createElement('div');
-                    card.className = 'admin-card';
-                card.draggable = true;
-                card.dataset.id = doc.id;
-                    card.innerHTML = `
-                        <div class="admin-card-img" style="background-image: url('${data.img}')">
-                            ${(!data.img) ? 'No Image' : ''}
-                        </div>
-                        <div class="admin-card-content">
-                            <h4>${data.name}</h4>
-                            ${data.price ? `<p style="color:var(--primary-color); font-weight:bold; margin-bottom: 5px;">${data.price}</p>` : ''}
-                            <p class="admin-card-desc">${data.desc}</p>
-                            <p style="font-size: 0.8rem; color: #999;">Order: ${data.order}</p>
-                            <div class="admin-actions">
-                                <button class="admin-btn admin-btn-edit" onclick="editProduct('${colId}', '${doc.id}')"><i class="fas fa-edit"></i> Edit</button>
-                                <button class="admin-btn admin-btn-delete" onclick="deleteProduct('${colId}', '${doc.id}')"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </div>
-                    `;
-                    productsList.appendChild(card);
-                });
-            });
+                </div>
+            `;
+            productsList.appendChild(card);
         });
     }
 
@@ -439,12 +362,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     prodClose.addEventListener('click', () => prodModal.classList.remove('show'));
 
-    prodForm.addEventListener('submit', (e) => {
+    prodForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!currentCollectionId) return;
 
         const id = document.getElementById('product-id').value;
         const data = {
+            collection_id: currentCollectionId,
             name: document.getElementById('prod-name').value,
             price: document.getElementById('prod-price').value,
             description: document.getElementById('prod-desc').value,
@@ -458,39 +382,46 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.textContent = 'Saving...';
         btn.disabled = true;
 
-        if (id) {
-            db.collection("collections").doc(currentCollectionId).collection("products").doc(id).set(data, { merge: true }).then(() => {
-                prodModal.classList.remove('show');
-            }).catch((err) => { console.error("Save error:", err); alert("Error saving: " + err.message); })
-              .finally(() => { btn.textContent = 'Save Product'; btn.disabled = false; });
-        } else {
-            db.collection("collections").doc(currentCollectionId).collection("products").add(data).then(() => {
-                prodModal.classList.remove('show');
-            }).catch((err) => { console.error("Save error:", err); alert("Error saving: " + err.message); })
-              .finally(() => { btn.textContent = 'Save Product'; btn.disabled = false; });
+        try {
+            if (id) {
+                const { error } = await window.supabaseClient.from("products").update(data).eq('id', id);
+                if (error) throw error;
+            } else {
+                const { error } = await window.supabaseClient.from("products").insert([data]);
+                if (error) throw error;
+            }
+            prodModal.classList.remove('show');
+            loadProducts(currentCollectionId);
+        } catch (err) {
+            console.error("Save error:", err);
+            alert("Error saving: " + err.message);
+        } finally {
+            btn.textContent = 'Save Product';
+            btn.disabled = false;
         }
     });
 
-    window.editProduct = function(colId, prodId) {
-        db.collection("collections").doc(colId).collection("products").doc(prodId).get().then((doc) => {
-            if (doc.exists) {
-                const data = extractData(doc.data());
-                document.getElementById('product-id').value = doc.id;
-                document.getElementById('prod-name').value = data.name;
-                document.getElementById('prod-price').value = data.price;
-                document.getElementById('prod-desc').value = data.desc;
-                document.getElementById('prod-img').value = data.img;
-                document.getElementById('prod-sizes').value = data.sizes;
-                document.getElementById('prod-refcode').value = data.refcode;
-                document.getElementById('prod-order').value = data.order;
-                prodModal.classList.add('show');
-            }
-        });
+    window.editProduct = async function(colId, prodId) {
+        const { data, error } = await window.supabaseClient.from("products").select('*').eq('id', prodId).single();
+        if (data) {
+            const raw = data;
+            const extracted = extractData(raw);
+            document.getElementById('product-id').value = raw.id;
+            document.getElementById('prod-name').value = extracted.name;
+            document.getElementById('prod-price').value = extracted.price;
+            document.getElementById('prod-desc').value = extracted.desc;
+            document.getElementById('prod-img').value = extracted.img;
+            document.getElementById('prod-sizes').value = extracted.sizes;
+            document.getElementById('prod-refcode').value = extracted.refcode;
+            document.getElementById('prod-order').value = extracted.order;
+            prodModal.classList.add('show');
+        }
     };
 
-    window.deleteProduct = function(colId, prodId) {
+    window.deleteProduct = async function(colId, prodId) {
         if (confirm("Are you sure you want to delete this product?")) {
-            db.collection("collections").doc(colId).collection("products").doc(prodId).delete();
+            await window.supabaseClient.from("products").delete().eq('id', prodId);
+            loadProducts(currentCollectionId);
         }
     };
 
@@ -583,27 +514,43 @@ document.addEventListener('DOMContentLoaded', () => {
         renderOrders(filteredOrdersList);
     }
 
-    function loadOrders() {
+    async function loadOrders() {
         ordersList.innerHTML = '<tr><td colspan="7">Loading orders...</td></tr>';
         
-        db.collection("orders").orderBy("createdAt", "desc").onSnapshot((snapshot) => {
+        try {
+            const { data, error } = await window.supabaseClient.from("orders").select('*').order('created_at', { ascending: false });
+            if (error) throw error;
+            
             allOrdersList = [];
-            if (snapshot.empty) {
+            if (!data || data.length === 0) {
                 renderOrders([]);
                 if (typeof updateDashboardStats === 'function') updateDashboardStats();
                 return;
             }
 
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                allOrdersList.push({ id: doc.id, ...data });
+            data.forEach((row) => {
+                allOrdersList.push({
+                    id: row.id,
+                    createdAt: { seconds: new Date(row.created_at).getTime() / 1000 },
+                    name: row.name,
+                    email: row.email,
+                    phone: row.phone,
+                    type: row.type,
+                    collection: row.collection,
+                    tile: row.tile,
+                    quantity: row.quantity,
+                    address: row.address,
+                    city: row.city,
+                    message: row.message,
+                    status: row.status
+                });
             });
             
             applyOrderFilters();
             if (typeof updateDashboardStats === 'function') updateDashboardStats();
-        }, (error) => {
+        } catch (error) {
             ordersList.innerHTML = `<tr><td colspan="7" style="color:red;">Error loading orders: ${error.message}</td></tr>`;
-        });
+        }
     }
 
     const orderSearchInput = document.getElementById('order-search-input');
@@ -641,15 +588,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (presetMonth) presetMonth.addEventListener('click', () => setDateFilter(30, 0));
     if (presetAll) presetAll.addEventListener('click', () => setDateFilter(null, null));
 
-    window.updateOrderStatus = function(orderId, newStatus) {
-        db.collection("orders").doc(orderId).update({ status: newStatus }).then(() => {
-            console.log("Order status updated");
-        });
+    window.updateOrderStatus = async function(orderId, newStatus) {
+        await window.supabaseClient.from("orders").update({ status: newStatus }).eq('id', orderId);
+        console.log("Order status updated");
     };
 
     window.deleteOrder = function(orderId) {
-        if (confirm("Are you sure you want to delete this order record?")) {
-            db.collection("orders").doc(orderId).delete();
+        if(confirm("Are you sure you want to delete this order?")) {
+            window.supabaseClient.from("orders").delete().eq('id', orderId).then(() => loadOrders());
         }
     };
 
@@ -849,14 +795,14 @@ document.addEventListener('DOMContentLoaded', () => {
         swapThreshold: 0.65,
         ghostClass: 'dragging',
         onEnd: function (evt) {
-            const batch = db.batch();
+            const promises = [];
             const cards = evt.to.querySelectorAll('.admin-card');
             cards.forEach((card, index) => {
                 const id = card.dataset.id;
                 if (!id) return;
-                batch.update(db.collection('collections').doc(id), { order: index });
+                promises.push(window.supabaseClient.from('collections').update({order: index}).eq('id', id));
             });
-            batch.commit().then(() => console.log('Collections reordered')).catch(e => console.error(e));
+            Promise.all(promises).then(() => console.log('Collections reordered')).catch(e => console.error(e));
         }
     });
 
@@ -866,14 +812,14 @@ document.addEventListener('DOMContentLoaded', () => {
         ghostClass: 'dragging',
         onEnd: function (evt) {
             if (!currentCollectionId) return;
-            const batch = db.batch();
+            const promises = [];
             const cards = evt.to.querySelectorAll('.admin-card');
             cards.forEach((card, index) => {
                 const id = card.dataset.id;
                 if (!id) return;
-                batch.update(db.collection('collections').doc(currentCollectionId).collection('products').doc(id), { order: index });
+                promises.push(window.supabaseClient.from('products').update({order: index}).eq('id', id));
             });
-            batch.commit().then(() => console.log('Products reordered')).catch(e => console.error(e));
+            Promise.all(promises).then(() => console.log('Products reordered')).catch(e => console.error(e));
         }
     });
     // --- DRAG AND DROP REORDERING --------------------------------
@@ -923,7 +869,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- DASHBOARD LOGIC ---
-    function countTotalProducts() {
+    async function countTotalProducts() {
         if (!allCollectionsList || allCollectionsList.length === 0) {
             const el = document.getElementById('dash-tot-products');
             if (el) el.textContent = '0';
@@ -933,29 +879,20 @@ document.addEventListener('DOMContentLoaded', () => {
         let total = 0;
         let processed = 0;
         
-        allCollectionsList.forEach(col => {
+        for (const col of allCollectionsList) {
             if (col.type === 'category') {
                 processed++;
-                if (processed === allCollectionsList.length) {
-                    const el = document.getElementById('dash-tot-products');
-                    if (el) el.textContent = total;
-                }
-                return;
+                continue;
             }
-
-            db.collection("collections").doc(col.id).collection("products").get()
-                .then(snap => {
-                    total += snap.size;
-                })
-                .catch(err => console.warn(err))
-                .finally(() => {
-                    processed++;
-                    if (processed === allCollectionsList.length) {
-                        const el = document.getElementById('dash-tot-products');
-                        if (el) el.textContent = total;
-                    }
-                });
-        });
+            const { count } = await window.supabaseClient.from("products").select('id', {count: 'exact', head: true}).eq('collection_id', col.id);
+            total += count || 0;
+            processed++;
+        }
+        
+        if (processed === allCollectionsList.length) {
+            const el = document.getElementById('dash-tot-products');
+            if (el) el.textContent = total;
+        }
     }
 
     let dashboardChart = null;

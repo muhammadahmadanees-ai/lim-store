@@ -17,11 +17,8 @@
     <link rel="stylesheet" href="./style.css">
     <link rel="stylesheet" href="./admin.css">
     
-    <!-- Firebase Compat SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-analytics-compat.js"></script>
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- SortableJS for smooth drag and drop -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -45,7 +42,7 @@
     
     
     <!-- App Scripts -->
-    <script src="./firebase.js" defer></script>
+    <script src="./supabase.js" defer></script>
     <script src="./admin.js" defer></script>
 </head>
 <body>
@@ -239,8 +236,10 @@
                     <textarea id="col-desc" rows="3" required></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Cover Image URL</label>
-                    <input type="url" id="col-img">
+                    <label>Cover Image</label>
+                    <input type="file" id="col-img-file" accept="image/*" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px;">
+                    <div style="font-size: 0.8rem; color: #666; margin-bottom: 8px; text-align: center;">- OR paste a URL below -</div>
+                    <input type="url" id="col-img" placeholder="https://...">
                 </div>
                 <div class="form-group">
                     <label>Sort Order (Number)</label>
@@ -271,8 +270,10 @@
                     <textarea id="prod-desc" rows="3" required></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Product Image URL</label>
-                    <input type="url" id="prod-img">
+                    <label>Product Image</label>
+                    <input type="file" id="prod-img-file" accept="image/*" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px;">
+                    <div style="font-size: 0.8rem; color: #666; margin-bottom: 8px; text-align: center;">- OR paste a URL below -</div>
+                    <input type="url" id="prod-img" placeholder="https://...">
                 </div>
                 <div class="form-group">
                     <label>Reference Code (Optional)</label>

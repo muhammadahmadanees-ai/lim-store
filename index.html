@@ -35,7 +35,7 @@
                 <i class="fas fa-bars"></i>
             </button>
             <a href="#" class="logo">
-                <img src="https://res.cloudinary.com/doiujqcpw/image/upload/v1780002822/lim_transparent_logo_2_3_rvmif4.png" alt="LIM Factory Logo" class="logo-img">
+                <img src="https://kagimdnkyqfduhcbkceo.supabase.co/storage/v1/object/public/images/lim_transparent_logo.png" alt="LIM Factory Logo" class="logo-img">
                 <span class="logo-text">
                     <span style="color: #000000;">L</span><span style="color: #7b7474;">I</span><span style="color: #d47b07;">M</span>&nbsp;
                     <span style="color: #000000;">F</span><span style="color: #8f0606;">ACT</span><span style="color: #000000;">OR</span><span style="color: #004aad;">Y</span>
@@ -86,41 +86,7 @@
             </div>
 
             <div class="grid collections-grid" id="collections-container">
-                <!-- Items will be dynamically populated or added here -->
-
-                <div class="collection-card">
-                    <!-- Placeholder for Firebase Image -->
-                    <div class="img-placeholder">
-                        <span>Image loaded from Firebase</span>
-                    </div>
-                    <div class="card-content">
-                        <h3>Geometric Collection</h3>
-                        <p class="card-desc">Shape your space with custom geometric patterns and colors.</p>
-                        <a href="#" class="link">View Details <span class="arrow-icon">&rarr;</span></a>
-                    </div>
-                </div>
-
-                <div class="collection-card">
-                    <div class="img-placeholder">
-                        <span>Image loaded from Firebase</span>
-                    </div>
-                    <div class="card-content">
-                        <h3>Organic Collection</h3>
-                        <p class="card-desc">Traditional aesthetics with irregular fragments of recycled marble.</p>
-                        <a href="#" class="link">View Details <span class="arrow-icon">&rarr;</span></a>
-                    </div>
-                </div>
-
-                <div class="collection-card">
-                    <div class="img-placeholder">
-                        <span>Image loaded from Firebase</span>
-                    </div>
-                    <div class="card-content">
-                        <h3>Cristal Collection</h3>
-                        <p class="card-desc">Brilliance from reflective glass depths set in a white binder.</p>
-                        <a href="#" class="link">View Details <span class="arrow-icon">&rarr;</span></a>
-                    </div>
-                </div>
+                <!-- Items will be dynamically populated from Supabase here -->
             </div>
         </div>
     </section>
@@ -491,11 +457,9 @@
         </div>
     </aside>
 
-    <!-- Firebase Compat SDK (works without a local server) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="./firebase.js"></script>
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./supabase.js"></script>
     <script src="./main.js?v=3"></script>
 
     <!-- Sticky WhatsApp Button -->
